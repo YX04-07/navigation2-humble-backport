@@ -27,6 +27,7 @@
 #include "nav2_costmap_2d/observation_buffer.hpp"
 #include "nav2_costmap_2d/inflation_layer.hpp"
 #include "nav2_ros_common/tf2_factories.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "pluginlib/class_loader.hpp"
 
 using nav2_costmap_2d::LETHAL_OBSTACLE;
@@ -127,8 +128,7 @@ public:
 
 private:
   /// @brief Dynamic parameters handler
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 
   nav2_costmap_2d::CombinationMethod combination_method_;
   std::vector<std::shared_ptr<Layer>> plugins_;

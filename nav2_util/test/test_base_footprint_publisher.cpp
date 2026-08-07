@@ -39,6 +39,7 @@ TEST(TestBaseFootprintPublisher, TestBaseFootprintPublisher)
   transform.header.stamp = node->now();
   transform.header.frame_id = "test1_1";
   transform.child_frame_id = "test1";
+  transform.transform.rotation.w = 1.0;
   tf_broadcaster->sendTransform(transform);
   executor.spin_some();
   EXPECT_THROW(
@@ -52,10 +53,16 @@ TEST(TestBaseFootprintPublisher, TestBaseFootprintPublisher)
   transform.transform.translation.x = 1.0;
   transform.transform.translation.y = 1.0;
   transform.transform.translation.z = 1.0;
-  tf_broadcaster->sendTransform(transform);
-  rclcpp::Rate r(1.0);
-  r.sleep();
-  executor.spin_some();
+  rclcpp::Rate rate(100.0);
+  for (unsigned int i = 0; i != 100; ++i) {
+    tf_broadcaster->sendTransform(transform);
+    executor.spin_some();
+    if (buffer->canTransform(base_link, base_footprint, tf2::TimePointZero)) {
+      break;
+    }
+    rate.sleep();
+  }
+  ASSERT_TRUE(buffer->canTransform(base_link, base_footprint, tf2::TimePointZero));
   auto t = buffer->lookupTransform(base_link, base_footprint, tf2::TimePointZero);
   EXPECT_EQ(t.transform.translation.x, 1.0);
   EXPECT_EQ(t.transform.translation.y, 1.0);

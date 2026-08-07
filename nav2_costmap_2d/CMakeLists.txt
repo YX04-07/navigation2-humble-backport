@@ -26,8 +26,19 @@ find_package(tf2_ros REQUIRED)
 find_package(nav2_ros_common REQUIRED)
 find_package(tf2_sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
-find_package(point_cloud_transport REQUIRED)
 find_package(Eigen3 REQUIRED)
+
+if(NOT TARGET tf2_sensor_msgs::tf2_sensor_msgs)
+  add_library(tf2_sensor_msgs::tf2_sensor_msgs INTERFACE IMPORTED)
+  set_target_properties(tf2_sensor_msgs::tf2_sensor_msgs PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${tf2_sensor_msgs_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${tf2_sensor_msgs_LIBRARIES}"
+  )
+endif()
+
+if(rclcpp_VERSION VERSION_GREATER_EQUAL "30.0.0")
+  find_package(point_cloud_transport REQUIRED)
+endif()
 
 option(ENABLE_OPENMP "Enable OpenMP parallelization" OFF)
 
@@ -98,9 +109,12 @@ target_link_libraries(layers PUBLIC
   nav2_ros_common::nav2_ros_common
   tf2::tf2
   nav2_ros_common::nav2_ros_common
-  point_cloud_transport::point_cloud_transport
   Eigen3::Eigen
 )
+
+if(rclcpp_VERSION VERSION_GREATER_EQUAL "30.0.0")
+  target_link_libraries(layers PUBLIC point_cloud_transport::point_cloud_transport)
+endif()
 
 # Link OpenMP if enabled
 if(ENABLE_OPENMP)
@@ -245,10 +259,15 @@ ament_export_dependencies(
   tf2_ros
   tf2_sensor_msgs
   nav2_ros_common
-  point_cloud_transport
 )
+
+if(rclcpp_VERSION VERSION_GREATER_EQUAL "30.0.0")
+  ament_export_dependencies(point_cloud_transport)
+endif()
 
 ament_export_dependencies(Eigen3)
 
 pluginlib_export_plugin_description_file(nav2_costmap_2d costmap_plugins.xml)
-ament_package()
+ament_package(
+  CONFIG_EXTRAS_POST "nav2_costmap_2d-extras.cmake"
+)

@@ -20,6 +20,7 @@
 #include <vector>
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_core/goal_checker.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
 
@@ -108,8 +109,7 @@ protected:
   bool position_reached_;
   std::string plugin_name_;
   std::mutex mutex_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 
   /**
    * @brief Validate incoming parameter updates before applying them.

@@ -145,7 +145,18 @@ bool BtActionServer<ActionT, NodeT>::on_configure()
     node, "robot_base_frame", rclcpp::ParameterValue(std::string("base_link")));
   nav2::declare_parameter_if_not_declared(
     node, "transform_tolerance", rclcpp::ParameterValue(0.1));
+#if RCLCPP_VERSION_GTE(29, 0, 0)
   rclcpp::copy_all_parameter_values(node, client_node_);
+#else
+  for (const auto & parameter_name : node->list_parameters({}, 0).names) {
+    if (!client_node_->has_parameter(parameter_name)) {
+      const auto parameter = node->get_parameter(parameter_name);
+      const auto descriptor = node->describe_parameter(parameter_name);
+      client_node_->declare_parameter(
+        parameter_name, parameter.get_parameter_value(), descriptor);
+    }
+  }
+#endif
 
   // Could be using a user rclcpp::Node, so need to use the Nav2 factory to create the subscription
   // to convert nav2::LifecycleNode, rclcpp::Node or rclcpp_lifecycle::LifecycleNode

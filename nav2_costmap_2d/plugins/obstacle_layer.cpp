@@ -798,13 +798,13 @@ ObstacleLayer::activate()
 {
   auto node = node_.lock();
   // Add callback for dynamic parameters
-  post_set_params_handler_ = node->add_post_set_parameters_callback(
-    std::bind(
-      &ObstacleLayer::updateParametersCallback,
-      this, std::placeholders::_1));
-  on_set_params_handler_ = node->add_on_set_parameters_callback(
+  parameter_callbacks_.activate(
+    node,
     std::bind(
       &ObstacleLayer::validateParameterUpdatesCallback,
+      this, std::placeholders::_1),
+    std::bind(
+      &ObstacleLayer::updateParametersCallback,
       this, std::placeholders::_1));
   for (auto & notifier : observation_notifiers_) {
     notifier->clear();
@@ -823,14 +823,7 @@ void
 ObstacleLayer::deactivate()
 {
   auto node = node_.lock();
-  if (post_set_params_handler_ && node) {
-    node->remove_post_set_parameters_callback(post_set_params_handler_.get());
-  }
-  post_set_params_handler_.reset();
-  if (on_set_params_handler_ && node) {
-    node->remove_on_set_parameters_callback(on_set_params_handler_.get());
-  }
-  on_set_params_handler_.reset();
+  parameter_callbacks_.deactivate(node);
 
   for (unsigned int i = 0; i < observation_subscribers_.size(); ++i) {
     if (observation_subscribers_[i] != NULL) {

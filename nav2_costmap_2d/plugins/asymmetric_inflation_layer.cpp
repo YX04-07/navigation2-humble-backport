@@ -131,11 +131,11 @@ AsymmetricInflationLayer::activate()
   if (!node) {
     throw std::runtime_error{"Failed to lock node"};
   }
-  on_set_params_handler_ = node->add_on_set_parameters_callback(
+  parameter_callbacks_.activate(
+    node,
     std::bind(
       &AsymmetricInflationLayer::validateParameterUpdatesCallback,
-      this, std::placeholders::_1));
-  post_set_params_handler_ = node->add_post_set_parameters_callback(
+      this, std::placeholders::_1),
     std::bind(
       &AsymmetricInflationLayer::updateParametersCallback,
       this, std::placeholders::_1));
@@ -145,14 +145,7 @@ void
 AsymmetricInflationLayer::deactivate()
 {
   auto node = node_.lock();
-  if (on_set_params_handler_ && node) {
-    node->remove_on_set_parameters_callback(on_set_params_handler_.get());
-  }
-  on_set_params_handler_.reset();
-  if (post_set_params_handler_ && node) {
-    node->remove_post_set_parameters_callback(post_set_params_handler_.get());
-  }
-  post_set_params_handler_.reset();
+  parameter_callbacks_.deactivate(node);
 }
 
 void

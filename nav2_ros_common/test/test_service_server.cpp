@@ -45,9 +45,7 @@ TEST(ServiceServer, can_handle_all_introspection_modes)
     auto node = rclcpp::Node::make_shared("test_node_" + mode);
     node->declare_parameter("introspection_mode", mode);
 
-    auto callback = [&a](const std::shared_ptr<rmw_request_id_t>,
-      const std::shared_ptr<std_srvs::srv::Empty::Request>,
-      std::shared_ptr<std_srvs::srv::Empty::Response>) {
+    auto callback = [&a](auto, auto, auto) {
         a = 1;
       };
 

@@ -32,6 +32,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
 #include "nav2_ros_common/node_utils.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "tf2/utils.hpp"
 #include "nav2_ros_common/tf2_factories.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
@@ -144,8 +145,7 @@ protected:
   nav2::LifecycleNode::WeakPtr _node;
 
   // Dynamic parameters handler
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr _post_set_params_handler;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr _on_set_params_handler;
+  nav2::ParameterCallbacks _parameter_callbacks;
 };
 
 // Backward-compatible type alias

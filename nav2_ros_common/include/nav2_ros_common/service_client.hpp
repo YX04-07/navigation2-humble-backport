@@ -66,7 +66,11 @@ public:
       provided_node->get_node_graph_interface(),
       provided_node->get_node_services_interface(),
       service_name,
+    #if RCLCPP_VERSION_GTE(29, 0, 0)
       rclcpp::ServicesQoS(),  // Use consistent QoS settings
+    #else
+      rclcpp::ServicesQoS().get_rmw_qos_profile(),  // Use consistent QoS settings
+    #endif
       callback_group_);
 
     nav2::setIntrospectionMode(

@@ -19,8 +19,11 @@
 #include <vector>
 #include <string>
 
+#include "rclcpp/version.h"
 #include "sensor_msgs/msg/point_cloud2.hpp"
+#if RCLCPP_VERSION_GTE(30, 0, 0)
 #include "point_cloud_transport/point_cloud_transport.hpp"
+#endif
 
 #include "nav2_collision_monitor/source.hpp"
 #include "nav2_ros_common/tf2_factories.hpp"
@@ -119,6 +122,8 @@ protected:
   #else
   nav2::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr data_sub_;
   #endif
+
+  nav2::ParameterCallbacks parameter_callbacks_;
 
   // Transport type used for PointCloud messages (e.g., raw or compressed)
   std::string transport_type_;

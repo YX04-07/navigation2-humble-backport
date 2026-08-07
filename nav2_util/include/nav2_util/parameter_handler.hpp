@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <mutex>
 
+#include "rclcpp/version.h"
 #include "nav2_ros_common/lifecycle_node.hpp"
 #include "nav2_ros_common/node_utils.hpp"
 
@@ -66,10 +67,17 @@ public:
   void activate()
   {
     auto node = node_.lock();
+#if RCLCPP_VERSION_GTE(17, 0, 0)
     post_set_params_handler_ = node->add_post_set_parameters_callback(
       std::bind(&ParameterHandler::updateParametersCallback, this, std::placeholders::_1));
     on_set_params_handler_ = node->add_on_set_parameters_callback(
       std::bind(&ParameterHandler::validateParameterUpdatesCallback, this, std::placeholders::_1));
+#else
+    on_set_params_handler_ = node->add_on_set_parameters_callback(
+      std::bind(
+        &ParameterHandler::validateAndUpdateParametersCallback, this,
+        std::placeholders::_1));
+#endif
   }
 
   /**
@@ -78,13 +86,17 @@ public:
   void deactivate()
   {
     auto node = node_.lock();
+#if RCLCPP_VERSION_GTE(17, 0, 0)
     if (post_set_params_handler_ && node) {
       node->remove_post_set_parameters_callback(post_set_params_handler_.get());
     }
+#endif
     if (on_set_params_handler_ && node) {
       node->remove_on_set_parameters_callback(on_set_params_handler_.get());
     }
+#if RCLCPP_VERSION_GTE(17, 0, 0)
     post_set_params_handler_.reset();
+#endif
     on_set_params_handler_.reset();
   }
 
@@ -93,8 +105,22 @@ protected:
   std::mutex mutex_;
   ParamsT params_;
   rclcpp::Logger logger_;
+#if RCLCPP_VERSION_GTE(17, 0, 0)
   rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
+#endif
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+
+#if !RCLCPP_VERSION_GTE(17, 0, 0)
+  rcl_interfaces::msg::SetParametersResult validateAndUpdateParametersCallback(
+    const std::vector<rclcpp::Parameter> & parameters)
+  {
+    auto result = validateParameterUpdatesCallback(parameters);
+    if (result.successful) {
+      updateParametersCallback(parameters);
+    }
+    return result;
+  }
+#endif
 
   /**
    * @brief Validate incoming parameter updates before applying them.

@@ -30,14 +30,7 @@ namespace nav2_controller
 SimpleProgressChecker::~SimpleProgressChecker()
 {
   auto node = node_.lock();
-  if (post_set_params_handler_ && node) {
-    node->remove_post_set_parameters_callback(post_set_params_handler_.get());
-  }
-  post_set_params_handler_.reset();
-  if (on_set_params_handler_ && node) {
-    node->remove_on_set_parameters_callback(on_set_params_handler_.get());
-  }
-  on_set_params_handler_.reset();
+  parameter_callbacks_.deactivate(node);
 }
 
 void SimpleProgressChecker::initialize(
@@ -57,13 +50,13 @@ void SimpleProgressChecker::initialize(
   time_allowance_ = rclcpp::Duration::from_seconds(time_allowance_param);
 
   // Add callback for dynamic parameter updates
-  post_set_params_handler_ = node->add_post_set_parameters_callback(
-    std::bind(
-      &SimpleProgressChecker::updateParametersCallback,
-      this, std::placeholders::_1));
-  on_set_params_handler_ = node->add_on_set_parameters_callback(
+  parameter_callbacks_.activate(
+    node,
     std::bind(
       &SimpleProgressChecker::validateParameterUpdatesCallback,
+      this, std::placeholders::_1),
+    std::bind(
+      &SimpleProgressChecker::updateParametersCallback,
       this, std::placeholders::_1));
 }
 

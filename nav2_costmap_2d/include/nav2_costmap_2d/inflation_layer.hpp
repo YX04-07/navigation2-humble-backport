@@ -28,6 +28,7 @@
 #include <Eigen/Core>
 
 #include "rclcpp/rclcpp.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_costmap_2d/inflation_layer_interface.hpp"
 #include "nav2_costmap_2d/layered_costmap.hpp"
 #include "nav2_costmap_2d/distance_transform.hpp"
@@ -236,8 +237,7 @@ protected:
   bool need_reinflation_;
   mutex_t * access_;
   // Dynamic parameters handler
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 };
 
 }  // namespace nav2_costmap_2d

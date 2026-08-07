@@ -65,14 +65,7 @@ SimpleGoalChecker::SimpleGoalChecker()
 SimpleGoalChecker::~SimpleGoalChecker()
 {
   auto node = node_.lock();
-  if (post_set_params_handler_ && node) {
-    node->remove_post_set_parameters_callback(post_set_params_handler_.get());
-  }
-  post_set_params_handler_.reset();
-  if (on_set_params_handler_ && node) {
-    node->remove_on_set_parameters_callback(on_set_params_handler_.get());
-  }
-  on_set_params_handler_.reset();
+  parameter_callbacks_.deactivate(node);
 }
 
 void SimpleGoalChecker::initialize(
@@ -100,13 +93,13 @@ void SimpleGoalChecker::initialize(
     (xy_goal_tolerance_ + xy_goal_tolerance_buffer_);
 
   // Add callback for dynamic parameters
-  post_set_params_handler_ = node->add_post_set_parameters_callback(
-    std::bind(
-      &SimpleGoalChecker::updateParametersCallback,
-      this, std::placeholders::_1));
-  on_set_params_handler_ = node->add_on_set_parameters_callback(
+  parameter_callbacks_.activate(
+    node,
     std::bind(
       &SimpleGoalChecker::validateParameterUpdatesCallback,
+      this, std::placeholders::_1),
+    std::bind(
+      &SimpleGoalChecker::updateParametersCallback,
       this, std::placeholders::_1));
 }
 

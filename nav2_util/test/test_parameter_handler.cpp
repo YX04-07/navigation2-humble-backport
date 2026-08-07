@@ -32,13 +32,14 @@ public:
 
   bool validated = false;
   bool updated = false;
+  bool accept_updates = true;
 
   rcl_interfaces::msg::SetParametersResult validateParameterUpdatesCallback(
     const std::vector<rclcpp::Parameter> & /*parameters*/) override
   {
     validated = true;
     rcl_interfaces::msg::SetParametersResult result;
-    result.successful = true;
+    result.successful = accept_updates;
     return result;
   }
 
@@ -79,19 +80,35 @@ TEST(ParameterHandlerTest, DynamicCallbacksAreInvoked)
   rclcpp::Logger logger = node->get_logger();
   TestParameterHandler handler(node, logger);
 
+  node->declare_parameter("test_param", 1.0);
   handler.activate();
 
-  // Declare a parameter and change it to trigger callbacks
-  node->declare_parameter("test_param", 1.0);
-  node->set_parameter(rclcpp::Parameter("test_param", 2.0));
+  auto result = node->set_parameter(rclcpp::Parameter("test_param", 2.0));
 
-  // Manually invoke callbacks
-  std::vector<rclcpp::Parameter> params = {rclcpp::Parameter("test_param", 3.0)};
-  handler.validateParameterUpdatesCallback(params);
-  handler.updateParametersCallback(params);
-
+  EXPECT_TRUE(result.successful);
   EXPECT_TRUE(handler.validated);
   EXPECT_TRUE(handler.updated);
+  handler.deactivate();
+  rclcpp::shutdown();
+}
+
+TEST(ParameterHandlerTest, RejectedUpdateIsNotApplied)
+{
+  rclcpp::init(0, nullptr);
+  auto node = std::make_shared<nav2::LifecycleNode>("test_node");
+  rclcpp::Logger logger = node->get_logger();
+  TestParameterHandler handler(node, logger);
+
+  node->declare_parameter("test_param", 1.0);
+  handler.accept_updates = false;
+  handler.activate();
+
+  auto result = node->set_parameter(rclcpp::Parameter("test_param", 2.0));
+
+  EXPECT_FALSE(result.successful);
+  EXPECT_TRUE(handler.validated);
+  EXPECT_FALSE(handler.updated);
+  EXPECT_EQ(node->get_parameter("test_param").as_double(), 1.0);
   handler.deactivate();
   rclcpp::shutdown();
 }

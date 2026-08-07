@@ -30,7 +30,7 @@ namespace opennav_docking
 Controller::Controller(
   const nav2::LifecycleNode::SharedPtr & node, nav2::TransformBuffer::SharedPtr tf,
   std::string fixed_frame, std::string base_frame)
-: tf2_buffer_(tf), fixed_frame_(fixed_frame), base_frame_(base_frame)
+: node_(node), tf2_buffer_(tf), fixed_frame_(fixed_frame), base_frame_(base_frame)
 {
   logger_ = node->get_logger();
   clock_ = node->get_clock();
@@ -69,13 +69,13 @@ Controller::Controller(
     v_linear_min_, v_linear_max_, v_angular_max_);
 
   // Add callback for dynamic parameters
-  post_set_params_handler_ = node->add_post_set_parameters_callback(
-    std::bind(
-      &Controller::updateParametersCallback,
-      this, std::placeholders::_1));
-  on_set_params_handler_ = node->add_on_set_parameters_callback(
+  parameter_callbacks_.activate(
+    node,
     std::bind(
       &Controller::validateParameterUpdatesCallback,
+      this, std::placeholders::_1),
+    std::bind(
+      &Controller::updateParametersCallback,
       this, std::placeholders::_1));
 
   if (use_collision_detection_) {
@@ -88,6 +88,7 @@ Controller::Controller(
 
 Controller::~Controller()
 {
+  parameter_callbacks_.deactivate(node_.lock());
   control_law_.reset();
   trajectory_pub_.reset();
   collision_checker_.reset();

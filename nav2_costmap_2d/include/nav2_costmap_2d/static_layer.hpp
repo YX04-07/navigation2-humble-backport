@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "map_msgs/msg/occupancy_grid_update.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_costmap_2d/costmap_layer.hpp"
 #include "nav2_costmap_2d/layered_costmap.hpp"
@@ -221,8 +222,7 @@ protected:
   tf2::Duration transform_tolerance_;
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr map_buffer_;
   // Dynamic parameters handler
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 };
 
 }  // namespace nav2_costmap_2d

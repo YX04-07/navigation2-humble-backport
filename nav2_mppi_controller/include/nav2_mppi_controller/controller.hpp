@@ -119,7 +119,9 @@ protected:
   rclcpp::Logger logger_{rclcpp::get_logger("MPPIController")};
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_;
   nav2::TransformBuffer::SharedPtr tf_buffer_;
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
   nav2::Publisher<nav_msgs::msg::Trajectory>::SharedPtr opt_traj_pub_;
+#endif
 
   std::unique_ptr<ParametersHandler> parameters_handler_;
   Optimizer optimizer_;
@@ -127,7 +129,9 @@ protected:
 
   bool visualize_;
   int critic_index_to_visualize_;
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
   bool publish_optimal_trajectory_;
+#endif
 };
 
 }  // namespace nav2_mppi_controller

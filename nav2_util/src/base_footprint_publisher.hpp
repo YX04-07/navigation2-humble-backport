@@ -30,35 +30,30 @@ namespace nav2_util
 {
 
 /**
- * @brief A TF2 listener that overrides the subscription callback
- * to inject base footprint publisher removing Z, Pitch, and Roll for
+ * @brief A TF2 listener and publisher removing Z, Pitch, and Roll for
  * 3D state estimation but desiring a 2D frame for navigation, visualization, or other reasons
  */
-class BaseFootprintPublisherListener : public nav2::TransformListener
+class BaseFootprintPublisherListener
 {
 public:
-  //  nosemgrep
   BaseFootprintPublisherListener(tf2::BufferCore & buffer, bool spin_thread, rclcpp::Node & node)
-  : nav2::TransformListener(buffer, spin_thread)
+  : transform_listener_(std::make_shared<nav2::TransformListener>(buffer, spin_thread))
   {
     base_link_frame_ = nav2::declare_or_get_parameter(
       &node, "base_link_frame", std::string("base_link"));
     base_footprint_frame_ = nav2::declare_or_get_parameter(
       &node, "base_footprint_frame", std::string("base_footprint"));
     tf_broadcaster_ = nav2::create_transform_broadcaster(&node);
+    tf_subscription_ = node.create_subscription<tf2_msgs::msg::TFMessage>(
+      "/tf", tf2_ros::DynamicListenerQoS(),
+      [this](tf2_msgs::msg::TFMessage::ConstSharedPtr msg) {subscription_callback(msg);});
   }
 
   /**
-   * @brief Overrides TF2 subscription callback to inject base footprint publisher
+   * @brief Processes dynamic transforms to inject the base footprint publisher
    */
-  void subscription_callback(tf2_msgs::msg::TFMessage::ConstSharedPtr msg, bool is_static) override
+  void subscription_callback(tf2_msgs::msg::TFMessage::ConstSharedPtr msg)
   {
-    TransformListener::subscription_callback(msg, is_static);
-
-    if (is_static) {
-      return;
-    }
-
     for (unsigned int i = 0; i != msg->transforms.size(); i++) {
       auto & t = msg->transforms[i];
       if (t.child_frame_id == base_link_frame_) {
@@ -87,7 +82,9 @@ public:
   }
 
 protected:
+  nav2::TransformListener::SharedPtr transform_listener_;
   nav2::TransformBroadcaster::SharedPtr tf_broadcaster_;
+  rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tf_subscription_;
   std::string base_link_frame_, base_footprint_frame_;
 };
 

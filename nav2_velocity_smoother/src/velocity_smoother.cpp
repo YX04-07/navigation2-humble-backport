@@ -173,13 +173,13 @@ VelocitySmoother::on_activate(const rclcpp_lifecycle::State &)
 
   // Add callback for dynamic parameters
   auto node = shared_from_this();
-  post_set_params_handler_ = node->add_post_set_parameters_callback(
-    std::bind(
-      &VelocitySmoother::updateParametersCallback,
-      this, std::placeholders::_1));
-  on_set_params_handler_ = node->add_on_set_parameters_callback(
+  parameter_callbacks_.activate(
+    node,
     std::bind(
       &VelocitySmoother::validateParameterUpdatesCallback,
+      this, std::placeholders::_1),
+    std::bind(
+      &VelocitySmoother::updateParametersCallback,
       this, std::placeholders::_1));
 
   // create bond connection
@@ -198,14 +198,7 @@ VelocitySmoother::on_deactivate(const rclcpp_lifecycle::State &)
   smoothed_cmd_pub_->on_deactivate();
 
   auto node = shared_from_this();
-  if (post_set_params_handler_ && node) {
-    node->remove_post_set_parameters_callback(post_set_params_handler_.get());
-  }
-  post_set_params_handler_.reset();
-  if (on_set_params_handler_ && node) {
-    node->remove_on_set_parameters_callback(on_set_params_handler_.get());
-  }
-  on_set_params_handler_.reset();
+  parameter_callbacks_.deactivate(node);
 
   // destroy bond connection
   destroyBond();
@@ -324,7 +317,8 @@ void VelocitySmoother::smootherTimer()
   // Smooth the timestamp of the smoothed message
   // Do not keep the same timestamp of the last command; this causes jerky behavior
   // See https://github.com/ros-navigation/navigation2/issues/5857
-  cmd_vel->header.stamp = command_.header.stamp + delta_time_since_last_command;
+  cmd_vel->header.stamp =
+    rclcpp::Time(command_.header.stamp) + delta_time_since_last_command;
 
   // Check for velocity timeout. If nothing received, publish zeros to apply deceleration
   if (delta_time_since_last_command > velocity_timeout_) {

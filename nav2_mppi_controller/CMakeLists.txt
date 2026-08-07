@@ -18,9 +18,18 @@ find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(nav2_ros_common REQUIRED)
 find_package(Eigen3 REQUIRED)
+
+if(NOT TARGET tf2_sensor_msgs::tf2_sensor_msgs)
+  add_library(tf2_sensor_msgs::tf2_sensor_msgs INTERFACE IMPORTED)
+  set_target_properties(tf2_sensor_msgs::tf2_sensor_msgs PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${tf2_sensor_msgs_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${tf2_sensor_msgs_LIBRARIES}"
+  )
+endif()
 
 include_directories(
   include

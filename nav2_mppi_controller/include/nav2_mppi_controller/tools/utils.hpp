@@ -32,7 +32,12 @@
 
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "nav_msgs/msg/path.hpp"
+#if __has_include("nav_msgs/msg/trajectory.hpp")
 #include "nav_msgs/msg/trajectory.hpp"
+#define NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG 1
+#else
+#define NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG 0
+#endif
 #include "visualization_msgs/msg/marker_array.hpp"
 
 #include "rclcpp/rclcpp.hpp"
@@ -171,6 +176,7 @@ inline geometry_msgs::msg::TwistStamped toTwistStamped(
   return twist;
 }
 
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
 inline std::unique_ptr<nav_msgs::msg::Trajectory> toTrajectoryMsg(
   const Eigen::ArrayXXf & trajectory,
   const models::ControlSequence & control_sequence,
@@ -199,6 +205,7 @@ inline std::unique_ptr<nav_msgs::msg::Trajectory> toTrajectoryMsg(
 
   return trajectory_msg;
 }
+#endif
 
 /**
  * @brief Convert path to a tensor

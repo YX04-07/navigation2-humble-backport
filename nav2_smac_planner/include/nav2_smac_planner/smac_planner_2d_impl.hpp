@@ -156,13 +156,13 @@ void SmacPlanner2DT<NodeT>::activate()
   }
   auto node = _node.lock();
   // Add callback for dynamic parameters
-  _post_set_params_handler = node->add_post_set_parameters_callback(
-    std::bind(
-      &SmacPlanner2DT<NodeT>::updateParametersCallback,
-      this, std::placeholders::_1));
-  _on_set_params_handler = node->add_on_set_parameters_callback(
+  _parameter_callbacks.activate(
+    node,
     std::bind(
       &SmacPlanner2DT<NodeT>::validateParameterUpdatesCallback,
+      this, std::placeholders::_1),
+    std::bind(
+      &SmacPlanner2DT<NodeT>::updateParametersCallback,
       this, std::placeholders::_1));
 }
 
@@ -178,14 +178,7 @@ void SmacPlanner2DT<NodeT>::deactivate()
   }
   // shutdown dyn_param_handler
   auto node = _node.lock();
-  if (_post_set_params_handler && node) {
-    node->remove_post_set_parameters_callback(_post_set_params_handler.get());
-  }
-  _post_set_params_handler.reset();
-  if (_on_set_params_handler && node) {
-    node->remove_on_set_parameters_callback(_on_set_params_handler.get());
-  }
-  _on_set_params_handler.reset();
+  _parameter_callbacks.deactivate(node);
 }
 
 template<typename NodeT>

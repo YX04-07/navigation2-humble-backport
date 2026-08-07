@@ -22,6 +22,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_core/goal_checker.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 
@@ -154,8 +155,7 @@ protected:
 
   // Dynamic parameters
   std::mutex mutex_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
   std::string plugin_name_;
 
   /**

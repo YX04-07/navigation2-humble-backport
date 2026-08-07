@@ -27,6 +27,10 @@ find_package(yaml-cpp REQUIRED)
 find_package(nav2_ros_common REQUIRED)
 find_package(bond REQUIRED)
 
+if(TARGET yaml-cpp AND NOT TARGET yaml-cpp::yaml-cpp)
+  add_library(yaml-cpp::yaml-cpp ALIAS yaml-cpp)
+endif()
+
 nav2_package()
 
 set(executable_name opennav_docking)

@@ -24,6 +24,7 @@
 
 #include "nav2_ros_common/lifecycle_node.hpp"
 #include "nav2_ros_common/node_utils.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/parameter_value.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
@@ -178,10 +179,7 @@ protected:
 
   std::mutex parameters_change_mutex_;
   rclcpp::Logger logger_{rclcpp::get_logger("MPPIController")};
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
-    on_set_param_handler_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr
-    post_set_param_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
   nav2::LifecycleNode::WeakPtr node_;
   std::string node_name_;
   std::string name_;

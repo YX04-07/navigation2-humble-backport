@@ -55,7 +55,11 @@ public:
       const std::shared_ptr<RequestType> request, std::shared_ptr<ResponseType> response) {
         this->callback_(request_header, request, response);
       },
+    #if RCLCPP_VERSION_GTE(29, 0, 0)
       rclcpp::ServicesQoS(),  // Use consistent QoS settings
+    #else
+      rclcpp::ServicesQoS().get_rmw_qos_profile(),  // Use consistent QoS settings
+    #endif
       callback_group);
 
     nav2::setIntrospectionMode(

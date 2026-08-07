@@ -24,6 +24,10 @@ find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+if(TARGET yaml-cpp AND NOT TARGET yaml-cpp::yaml-cpp)
+  add_library(yaml-cpp::yaml-cpp ALIAS yaml-cpp)
+endif()
+
 pkg_search_module(UUID REQUIRED uuid)
 
 nav2_package()

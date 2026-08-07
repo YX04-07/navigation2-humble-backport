@@ -41,6 +41,7 @@
 #include <vector>
 #include <stdexcept>
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace dwb_plugins
@@ -164,8 +165,7 @@ protected:
   std::atomic<KinematicParameters *> kinematics_;
 
   // Dynamic parameters handler
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
   /**
    * @brief Validate incoming parameter updates before applying them.
    * This callback is triggered when one or more parameters are about to be updated.

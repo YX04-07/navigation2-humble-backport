@@ -4,6 +4,7 @@ project(nav2_collision_monitor)
 find_package(ament_cmake REQUIRED)
 find_package(backward_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(nav2_common REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_msgs REQUIRED)
@@ -14,10 +15,14 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(nav2_ros_common REQUIRED)
-find_package(point_cloud_transport REQUIRED)
+
+if(rclcpp_VERSION VERSION_GREATER_EQUAL "30.0.0")
+  find_package(point_cloud_transport REQUIRED)
+endif()
 
 nav2_package()
 
@@ -53,13 +58,20 @@ target_link_libraries(${monitor_library_name} PUBLIC
   nav2_util::nav2_util_core
   nav2_ros_common::nav2_ros_common
   rclcpp::rclcpp
+  rcl_interfaces::rcl_interfaces
   rclcpp_lifecycle::rclcpp_lifecycle
   sensor_msgs::sensor_msgs
+  std_msgs::std_msgs
   tf2::tf2
+  tf2_geometry_msgs::tf2_geometry_msgs
   tf2_ros::tf2_ros
   visualization_msgs::visualization_msgs
-  point_cloud_transport::point_cloud_transport
 )
+if(rclcpp_VERSION VERSION_GREATER_EQUAL "30.0.0")
+  target_link_libraries(${monitor_library_name} PUBLIC
+    point_cloud_transport::point_cloud_transport
+  )
+endif()
 target_link_libraries(${monitor_library_name} PRIVATE
   rclcpp_components::component
 )
@@ -90,13 +102,20 @@ target_link_libraries(${detector_library_name} PUBLIC
   nav2_util::nav2_util_core
   nav2_ros_common::nav2_ros_common
   rclcpp::rclcpp
+  rcl_interfaces::rcl_interfaces
   rclcpp_lifecycle::rclcpp_lifecycle
   sensor_msgs::sensor_msgs
+  std_msgs::std_msgs
+  tf2_geometry_msgs::tf2_geometry_msgs
   tf2_ros::tf2_ros
   tf2::tf2
   visualization_msgs::visualization_msgs
-  point_cloud_transport::point_cloud_transport
 )
+if(rclcpp_VERSION VERSION_GREATER_EQUAL "30.0.0")
+  target_link_libraries(${detector_library_name} PUBLIC
+    point_cloud_transport::point_cloud_transport
+  )
+endif()
 target_link_libraries(${detector_library_name} PRIVATE
   rclcpp_components::component
 )
@@ -172,16 +191,20 @@ ament_export_dependencies(
   nav2_costmap_2d
   nav2_msgs
   nav2_util
-  rosgraph_msgs
+  rcl_interfaces
   rclcpp
   rclcpp_lifecycle
   sensor_msgs
+  std_msgs
   tf2
+  tf2_geometry_msgs
   tf2_ros
   nav2_ros_common
   visualization_msgs
-  point_cloud_transport
 )
+if(rclcpp_VERSION VERSION_GREATER_EQUAL "30.0.0")
+  ament_export_dependencies(point_cloud_transport)
+endif()
 ament_export_targets(export_${PROJECT_NAME})
 
 ament_package()

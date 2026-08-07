@@ -233,19 +233,18 @@ public:
    * @return A shared pointer to the created GenericTimer
    */
   template<typename DurationRepT, typename DurationT, typename CallbackT>
-  typename rclcpp::GenericTimer<CallbackT>::SharedPtr
+  rclcpp::TimerBase::SharedPtr
   create_timer(
     std::chrono::duration<DurationRepT, DurationT> period,
     CallbackT callback,
     rclcpp::CallbackGroup::SharedPtr group = nullptr)
   {
     return rclcpp::create_timer(
+      this,
       nav2::selectSteadyOrSimClock(this),
-      period,
+      rclcpp::Duration(period),
       std::move(callback),
-      group,
-      this->get_node_base_interface().get(),
-      this->get_node_timers_interface().get());
+      group);
   }
 
   /**

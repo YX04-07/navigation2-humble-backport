@@ -27,6 +27,7 @@
 #include "tf2/LinearMath/Transform.hpp"
 
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_ros_common/tf2_factories.hpp"
 
 #include "nav2_msgs/msg/exclusion_zone_description.hpp"
@@ -164,8 +165,7 @@ protected:
   rclcpp::Clock::SharedPtr node_clock_;
   /// @brief Dynamic parameters handlers
   mutable std::mutex mutex_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 
   /// @brief Name of the zone
   std::string zone_name_;

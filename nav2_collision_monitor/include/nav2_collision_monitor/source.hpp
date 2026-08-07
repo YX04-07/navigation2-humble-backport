@@ -30,6 +30,7 @@
 #include "nav2_collision_monitor/types.hpp"
 #include "nav2_collision_monitor/exclusion_zone.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "std_msgs/msg/header.hpp"
 
 using rcl_interfaces::msg::ParameterType;
@@ -207,8 +208,7 @@ protected:
   rclcpp::Logger logger_{rclcpp::get_logger("collision_monitor")};
   /// @brief Dynamic parameters handler
   mutable std::mutex mutex_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 
   // Basic parameters
   /// @brief Name of data source

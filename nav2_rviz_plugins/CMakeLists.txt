@@ -24,6 +24,10 @@ find_package(nav2_ros_common REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
+if(TARGET yaml-cpp AND NOT TARGET yaml-cpp::yaml-cpp)
+  add_library(yaml-cpp::yaml-cpp ALIAS yaml-cpp)
+endif()
+
 # In Kilted and older distros, rviz with Qt6 is not supported
 if(TARGET Qt5::Core)
   set(QT_VERSION_MAJOR 5)

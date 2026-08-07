@@ -49,14 +49,7 @@ Source::~Source()
   add_ez_service_.reset();
   remove_ez_service_.reset();
   auto node = node_.lock();
-  if (post_set_params_handler_ && node) {
-    node->remove_post_set_parameters_callback(post_set_params_handler_.get());
-  }
-  post_set_params_handler_.reset();
-  if (on_set_params_handler_ && node) {
-    node->remove_on_set_parameters_callback(on_set_params_handler_.get());
-  }
-  on_set_params_handler_.reset();
+  parameter_callbacks_.deactivate(node);
 }
 
 bool Source::configure()
@@ -85,13 +78,13 @@ bool Source::configure()
   }
 
   // Add callback for dynamic parameters
-  post_set_params_handler_ = node->add_post_set_parameters_callback(
-    std::bind(
-      &Source::updateParametersCallback,
-      this, std::placeholders::_1));
-  on_set_params_handler_ = node->add_on_set_parameters_callback(
+  parameter_callbacks_.activate(
+    node,
     std::bind(
       &Source::validateParameterUpdatesCallback,
+      this, std::placeholders::_1),
+    std::bind(
+      &Source::updateParametersCallback,
       this, std::placeholders::_1));
 
   // Create services for runtime add/remove of exclusion zones

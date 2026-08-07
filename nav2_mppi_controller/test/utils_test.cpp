@@ -512,6 +512,7 @@ TEST(UtilsTests, NormalizeYawsBetweenPointsTest)
   EXPECT_NEAR(yaws_between_points_corrected[1], -0.8 * M_PIF_2, 1e-3);
 }
 
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
 TEST(UtilsTests, toTrajectoryMsgTest)
 {
   Eigen::ArrayXXf trajectory(5, 3);
@@ -576,6 +577,7 @@ TEST(UtilsTests, toTrajectoryMsgTest)
   EXPECT_EQ(rclcpp::Time(trajectory_msg->points[4].header.stamp) - base_time,
     rclcpp::Duration(4, 0));
 }
+#endif
 
 TEST(UtilsTests, getLastPathPoseTest)
 {

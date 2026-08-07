@@ -40,7 +40,9 @@ void MPPIController::configure(
   getParam(visualize_, "visualize", false);
   getParam(critic_index_to_visualize_, "critic_index_to_visualize", 0);
 
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
   getParam(publish_optimal_trajectory_, "publish_optimal_trajectory", false);
+#endif
 
   // Configure composed objects
   optimizer_.initialize(parent_, name_, costmap_ros_, tf_buffer_, parameters_handler_.get());
@@ -48,10 +50,12 @@ void MPPIController::configure(
     parent_, name_,
     costmap_ros_->getGlobalFrameID(), parameters_handler_.get());
 
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
   if (publish_optimal_trajectory_) {
     opt_traj_pub_ = node->create_publisher<nav_msgs::msg::Trajectory>(
       "~/optimal_trajectory");
   }
+#endif
 
   RCLCPP_INFO(logger_, "Configured MPPI Controller: %s", name_.c_str());
 }
@@ -61,7 +65,9 @@ void MPPIController::cleanup()
   optimizer_.shutdown();
   trajectory_visualizer_.on_cleanup();
   parameters_handler_.reset();
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
   opt_traj_pub_.reset();
+#endif
   RCLCPP_INFO(logger_, "Cleaned up MPPI Controller: %s", name_.c_str());
 }
 
@@ -70,18 +76,22 @@ void MPPIController::activate()
   auto node = parent_.lock();
   trajectory_visualizer_.on_activate();
   parameters_handler_->start();
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
   if (opt_traj_pub_) {
     opt_traj_pub_->on_activate();
   }
+#endif
   RCLCPP_INFO(logger_, "Activated MPPI Controller: %s", name_.c_str());
 }
 
 void MPPIController::deactivate()
 {
   trajectory_visualizer_.on_deactivate();
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
   if (opt_traj_pub_) {
     opt_traj_pub_->on_deactivate();
   }
+#endif
   RCLCPP_INFO(logger_, "Deactivated MPPI Controller: %s", name_.c_str());
 }
 
@@ -116,6 +126,7 @@ geometry_msgs::msg::TwistStamped MPPIController::computeVelocityCommands(
   RCLCPP_INFO(logger_, "Control loop execution time: %ld [ms]", duration);
 #endif
 
+#if NAV2_MPPI_CONTROLLER_HAS_TRAJECTORY_MSG
   if (publish_optimal_trajectory_ && opt_traj_pub_ && opt_traj_pub_->get_subscription_count() > 0) {
     std_msgs::msg::Header trajectory_header;
     trajectory_header.stamp = cmd.header.stamp;
@@ -128,6 +139,7 @@ geometry_msgs::msg::TwistStamped MPPIController::computeVelocityCommands(
       trajectory_header);
     opt_traj_pub_->publish(std::move(trajectory_msg));
   }
+#endif
 
   if (visualize_) {
     visualize(cmd.header.stamp, optimal_trajectory);

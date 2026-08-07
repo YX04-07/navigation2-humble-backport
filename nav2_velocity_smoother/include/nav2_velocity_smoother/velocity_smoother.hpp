@@ -24,6 +24,7 @@
 
 #include "nav2_ros_common/lifecycle_node.hpp"
 #include "nav2_ros_common/node_utils.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_util/odometry_utils.hpp"
 #include "nav2_util/robot_utils.hpp"
 #include "nav2_util/twist_publisher.hpp"
@@ -172,8 +173,7 @@ protected:
   rclcpp::Time last_command_time_;
 
   std::mutex mutex_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 };
 
 }  // namespace nav2_velocity_smoother

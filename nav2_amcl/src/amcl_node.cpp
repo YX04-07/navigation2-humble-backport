@@ -151,13 +151,13 @@ AmclNode::on_activate(const rclcpp_lifecycle::State & /*state*/)
 
   auto node = shared_from_this();
   // Add callback for dynamic parameters
-  post_set_params_handler_ = node->add_post_set_parameters_callback(
-    std::bind(
-      &AmclNode::updateParametersCallback,
-      this, std::placeholders::_1));
-  on_set_params_handler_ = node->add_on_set_parameters_callback(
+  parameter_callbacks_.activate(
+    node,
     std::bind(
       &AmclNode::validateParameterUpdatesCallback,
+      this, std::placeholders::_1),
+    std::bind(
+      &AmclNode::updateParametersCallback,
       this, std::placeholders::_1));
 
   // create bond connection
@@ -184,10 +184,7 @@ AmclNode::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
   }
 
   // shutdown and reset dynamic parameter handler
-  remove_post_set_parameters_callback(post_set_params_handler_.get());
-  post_set_params_handler_.reset();
-  remove_on_set_parameters_callback(on_set_params_handler_.get());
-  on_set_params_handler_.reset();
+  parameter_callbacks_.deactivate(shared_from_this());
 
   // destroy bond connection
   destroyBond();

@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_ros_common/service_client.hpp"
 #include "nav2_util/twist_subscriber.hpp"
 #include "nav2_loopback_sim/clock_publisher.hpp"
@@ -221,8 +222,7 @@ protected:
   rclcpp::TimerBase::SharedPtr scan_timer_;
 
   std::unique_ptr<ClockPublisher> clock_publisher_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_validator_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr param_updater_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 };
 
 }  // namespace nav2_loopback_sim

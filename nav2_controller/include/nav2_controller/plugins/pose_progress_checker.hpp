@@ -20,6 +20,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_controller/plugins/simple_progress_checker.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 
 namespace nav2_controller
 {
@@ -80,8 +81,7 @@ protected:
 
   // Dynamic parameters handler
   std::mutex mutex_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
   std::string plugin_name_;
   nav2::LifecycleNode::WeakPtr node_;
   rclcpp::Logger logger_{rclcpp::get_logger("pose_progress_checker")};

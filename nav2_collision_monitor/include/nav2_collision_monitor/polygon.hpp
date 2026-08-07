@@ -27,6 +27,7 @@
 #include "nav2_ros_common/tf2_factories.hpp"
 
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_costmap_2d/footprint_subscriber.hpp"
 
 #include "nav2_collision_monitor/types.hpp"
@@ -307,8 +308,7 @@ protected:
   rclcpp::Logger logger_{rclcpp::get_logger("collision_monitor")};
   /// @brief Dynamic parameters handler
   mutable std::mutex mutex_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 
   // Basic parameters
   /// @brief Name of polygon

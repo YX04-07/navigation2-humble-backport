@@ -43,12 +43,15 @@
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "rclcpp/version.h"
 #include "laser_geometry/laser_geometry.hpp"
 #include "nav2_ros_common/tf2_factories.hpp"
 
 #include "message_filters/subscriber.hpp"
+#if RCLCPP_VERSION_GTE(30, 0, 0)
 #include "point_cloud_transport/subscriber_filter.hpp"
+#endif
 
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
@@ -262,8 +265,7 @@ protected:
   std::vector<std::shared_ptr<nav2_costmap_2d::ObservationBuffer>> clearing_buffers_;
 
   /// @brief Dynamic parameters handler
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 
   // Used only for testing purposes
   std::vector<nav2_costmap_2d::Observation::ConstSharedPtr> static_clearing_observations_;

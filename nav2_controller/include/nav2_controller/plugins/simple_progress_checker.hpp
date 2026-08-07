@@ -19,6 +19,7 @@
 #include <vector>
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_core/progress_checker.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose.hpp"
@@ -101,8 +102,7 @@ protected:
   bool baseline_pose_set_{false};
   // Dynamic parameters handler
   std::mutex mutex_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
   std::string plugin_name_;
 
   /**

@@ -16,6 +16,7 @@
 #define NAV2_BEHAVIOR_TREE__UTILS__LOOP_RATE_HPP_
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 #include "rclcpp/rclcpp.hpp"
@@ -24,6 +25,13 @@
 
 namespace nav2_behavior_tree
 {
+
+template<typename TreeT, typename = void>
+struct HasWakeUpSignal : std::false_type {};
+
+template<typename TreeT>
+struct HasWakeUpSignal<
+  TreeT, std::void_t<decltype(std::declval<TreeT &>().wakeUpSignal())>> : std::true_type {};
 
 class LoopRate
 {
@@ -60,8 +68,20 @@ public:
       // Either way do not sleep and return false
       return false;
     }
-    // Sleep until the target time, preemptible by emitWakeUpSignal().
-    auto wake_up = tree_->wakeUpSignal();
+    return sleepUntil(next_interval);
+  }
+
+  std::chrono::nanoseconds period() const
+  {
+    return std::chrono::nanoseconds(period_.nanoseconds());
+  }
+
+private:
+  template<typename TreeT = BT::Tree>
+  std::enable_if_t<HasWakeUpSignal<TreeT>::value, bool> sleepUntil(
+    const rclcpp::Time & next_interval)
+  {
+    auto wake_up = static_cast<TreeT *>(tree_)->wakeUpSignal();
     const bool is_sim_time =
       clock_->get_clock_type() == RCL_ROS_TIME &&
       clock_->ros_time_is_active();
@@ -84,12 +104,15 @@ public:
     return true;
   }
 
-  std::chrono::nanoseconds period() const
+  template<typename TreeT = BT::Tree>
+  std::enable_if_t<!HasWakeUpSignal<TreeT>::value, bool> sleepUntil(
+    const rclcpp::Time & next_interval)
   {
-    return std::chrono::nanoseconds(period_.nanoseconds());
+    auto remaining = next_interval - clock_->now();
+    static_cast<TreeT *>(tree_)->sleep(std::chrono::nanoseconds(remaining.nanoseconds()));
+    return true;
   }
 
-private:
   rclcpp::Clock::SharedPtr clock_;
   rclcpp::Duration period_;
   rclcpp::Time last_interval_;

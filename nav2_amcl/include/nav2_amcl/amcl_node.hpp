@@ -35,6 +35,7 @@
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_amcl/motion_model/motion_model.hpp"
 #include "nav2_amcl/sensors/laser/laser.hpp"
 #include "nav2_msgs/msg/particle.hpp"
@@ -111,8 +112,7 @@ protected:
   void updateParametersCallback(const std::vector<rclcpp::Parameter> & parameters);
 
   // Dynamic parameters handler
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 
   // Since the sensor data from gazebo or the robot is not lifecycle enabled, we won't
   // respond until we're in the active state

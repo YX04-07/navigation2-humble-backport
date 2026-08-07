@@ -43,6 +43,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <nav2_costmap_2d/layer.hpp>
 #include <nav2_costmap_2d/layered_costmap.hpp>
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include <nav2_costmap_2d/observation_buffer.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav2_msgs/msg/voxel_grid.hpp>
@@ -251,8 +252,7 @@ protected:
   void updateParametersCallback(const std::vector<rclcpp::Parameter> & parameters);
 
   // Dynamic parameters handler
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
 };
 
 }  // namespace nav2_costmap_2d

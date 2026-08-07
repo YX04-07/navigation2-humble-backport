@@ -28,6 +28,7 @@
 #include "nav2_graceful_controller/smooth_control_law.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_ros_common/tf2_factories.hpp"
 
 namespace opennav_docking
@@ -124,10 +125,10 @@ protected:
     std::string costmap_topic, std::string footprint_topic, double transform_tolerance);
 
   // Dynamic parameters handler
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
   std::mutex dynamic_params_lock_;
 
+  nav2::LifecycleNode::WeakPtr node_;
   rclcpp::Logger logger_{rclcpp::get_logger("Controller")};
   rclcpp::Clock::SharedPtr clock_;
 

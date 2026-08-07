@@ -101,11 +101,11 @@ LoopbackSimulator::on_configure(const rclcpp_lifecycle::State & /*state*/)
       speed_factor_);
   }
 
-  param_validator_ = add_on_set_parameters_callback(
+  parameter_callbacks_.activate(
+    shared_from_this(),
     std::bind(
       &LoopbackSimulator::validateParameterUpdatesCallback, this,
-      std::placeholders::_1));
-  param_updater_ = add_post_set_parameters_callback(
+      std::placeholders::_1),
     std::bind(
       &LoopbackSimulator::updateParametersCallback, this,
       std::placeholders::_1));
@@ -190,8 +190,7 @@ LoopbackSimulator::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   tf_buffer_.reset();
   tf_broadcaster_.reset();
   clock_publisher_.reset();
-  param_validator_.reset();
-  param_updater_.reset();
+  parameter_callbacks_.deactivate(shared_from_this());
 
   return nav2::CallbackReturn::SUCCESS;
 }

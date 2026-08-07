@@ -18,10 +18,12 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 #include "rclcpp/rate.hpp"
 #include "rclcpp/create_timer.hpp"
+#include "rclcpp/version.h"
 
 namespace nav2
 {
@@ -57,7 +59,10 @@ rclcpp::Clock::SharedPtr selectSteadyOrSimClock(NodeT node)
  * (simulation time). When use_sim_time is false, a steady (monotonic) clock
  * is used to avoid issues with system clock jumps (e.g. NTP corrections).
  */
-class Rate : public rclcpp::Rate
+class Rate
+#if RCLCPP_VERSION_GTE(30, 0, 0)
+  : public rclcpp::Rate
+#endif
 {
 public:
   /**
@@ -67,8 +72,54 @@ public:
    */
   template<typename NodeT>
   explicit Rate(NodeT node, double rate)
+#if RCLCPP_VERSION_GTE(30, 0, 0)
   : rclcpp::Rate(rate, selectSteadyOrSimClock(node))
+#else
+  : clock_(selectSteadyOrSimClock(node)),
+    period_(rclcpp::Duration::from_seconds(validateRate(rate))),
+    last_interval_(clock_->now())
+#endif
   {}
+
+#if !RCLCPP_VERSION_GTE(30, 0, 0)
+  bool sleep()
+  {
+    auto now = clock_->now();
+    auto next_interval = last_interval_ + period_;
+    if (now < last_interval_) {
+      next_interval = now + period_;
+    }
+
+    auto time_to_sleep = next_interval - now;
+    last_interval_ = last_interval_ + period_;
+    if (time_to_sleep <= rclcpp::Duration(0, 0)) {
+      if (now > next_interval + period_) {
+        last_interval_ = now + period_;
+      }
+      return false;
+    }
+
+    return clock_->sleep_for(time_to_sleep);
+  }
+
+  void reset()
+  {
+    last_interval_ = clock_->now();
+  }
+
+private:
+  static double validateRate(double rate)
+  {
+    if (rate <= 0.0) {
+      throw std::invalid_argument("rate must be greater than zero");
+    }
+    return 1.0 / rate;
+  }
+
+  rclcpp::Clock::SharedPtr clock_;
+  rclcpp::Duration period_;
+  rclcpp::Time last_interval_;
+#endif
 };
 
 }  // namespace nav2

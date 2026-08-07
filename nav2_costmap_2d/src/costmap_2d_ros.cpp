@@ -317,12 +317,12 @@ Costmap2DROS::on_activate(const rclcpp_lifecycle::State & /*state*/)
   start();
 
   // Add callback for dynamic parameters
-  post_set_params_handler_ = this->add_post_set_parameters_callback(
+  parameter_callbacks_.activate(
+    this,
     std::bind(
-      &Costmap2DROS::updateParametersCallback,
-      this, std::placeholders::_1));
-  on_set_params_handler = this->add_on_set_parameters_callback(
-    std::bind(&Costmap2DROS::validateParameterUpdatesCallback, this, _1));
+      &Costmap2DROS::validateParameterUpdatesCallback, this, _1),
+    std::bind(
+      &Costmap2DROS::updateParametersCallback, this, std::placeholders::_1));
 
   return nav2::CallbackReturn::SUCCESS;
 }
@@ -332,10 +332,7 @@ Costmap2DROS::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Deactivating");
 
-  remove_post_set_parameters_callback(post_set_params_handler_.get());
-  post_set_params_handler_.reset();
-  remove_on_set_parameters_callback(on_set_params_handler.get());
-  on_set_params_handler.reset();
+  parameter_callbacks_.deactivate(this);
 
   stop();
 

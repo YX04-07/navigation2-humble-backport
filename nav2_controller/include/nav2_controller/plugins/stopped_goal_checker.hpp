@@ -41,6 +41,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_controller/plugins/simple_goal_checker.hpp"
 
 namespace nav2_controller
@@ -119,8 +120,7 @@ protected:
   double rot_stopped_velocity_, trans_stopped_velocity_;
   // Dynamic parameters handler
   std::mutex mutex_;
-  rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_params_handler_;
+  nav2::ParameterCallbacks parameter_callbacks_;
   std::string plugin_name_;
 
   /**

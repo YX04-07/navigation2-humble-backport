@@ -52,6 +52,7 @@
 #include "nav2_costmap_2d/layered_costmap.hpp"
 #include "nav2_costmap_2d/layer.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/parameter_callbacks.hpp"
 #include "nav2_msgs/srv/get_costs.hpp"
 #include "pluginlib/class_loader.hpp"
 #include "tf2/convert.hpp"
@@ -429,8 +430,7 @@ protected:
   std::unique_ptr<ClearCostmapService> clear_costmap_service_;
 
   // Dynamic parameters handler
-  PostSetParametersCallbackHandle::SharedPtr post_set_params_handler_;
-  OnSetParametersCallbackHandle::SharedPtr on_set_params_handler;
+  nav2::ParameterCallbacks parameter_callbacks_;
 
   /**
    * @brief Validate incoming parameter updates before applying them.
