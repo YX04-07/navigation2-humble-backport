@@ -44,7 +44,7 @@ bt_navigator:
   ros__parameters:
     global_frame: map
     robot_base_frame: base_link
-    odom_topic: odom_cancel
+    odom_topic: odom
     bt_loop_duration: 10
     filter_duration: 0.3
     default_server_timeout: 20
@@ -91,6 +91,7 @@ bt_navigator:
 
 controller_server:
   ros__parameters:
+    enable_stamped_cmd_vel: false
     controller_frequency: 10.0
     costmap_update_timeout: 0.30
     min_x_velocity_threshold: 0.001
@@ -125,7 +126,7 @@ controller_server:
       plugin: "nav2_controller::FeasiblePathHandler"
       prune_distance: 2.0
       enforce_path_inversion: false
-      enforce_path_rotation: false
+      enforce_path_rotation: true
       inversion_xy_tolerance: 0.2
       inversion_yaw_tolerance: 0.4
       minimum_rotation_angle: 0.785
@@ -137,25 +138,25 @@ controller_server:
       model_delay_vx: 0.0
       model_delay_vy: 0.0
       model_delay_wz: 0.0
-      batch_size: 2000
+      batch_size: 1000
       open_loop: false
       ax_max: 3.0
       ax_min: -3.0
-      ay_max: 3.0
-      ay_min: -3.0
-      az_max: 3.5
+      ay_max: 0.0
+      ay_min: 0.0
+      az_max: 1.5
       vx_std: 0.2
       vy_std: 0.2
       wz_std: 0.4
       vx_max: 0.5
-      vx_min: -0.35
-      vy_max: 0.5
+      vx_min: -0.0
+      vy_max: 0.0
       wz_max: 1.9
       iteration_count: 1
       temperature: 0.3
       gamma: 0.015
-      visualize: true
-      publish_optimal_trajectory: true
+      visualize: false
+      publish_optimal_trajectory: false
       regenerate_noises: true
       motion_model: "diff_drive"
       diff_drive:
@@ -241,14 +242,14 @@ local_costmap:
     ros__parameters:
       update_frequency: 5.0
       publish_frequency: 2.0
-      global_frame: map
+      global_frame: odom
       robot_base_frame: base_link
+      transform_tolerance: 0.3
       rolling_window: true
-      width: 5
-      height: 5
+      width: 3
+      height: 3
       resolution: 0.05
-      # robot_radius: 0.22
-      footprint: "[ [0.200, 0.320], [0.200, -0.320], [-0.200, -0.320], [-0.200, 0.320] ]"
+      robot_radius: 0.22
       plugins: ["voxel_layer", "inflation_layer"]
       filters: ["keepout_filter"]
       keepout_filter:
@@ -271,7 +272,6 @@ local_costmap:
         max_obstacle_height: 2.0
         mark_threshold: 0
         observation_sources: scan
-        observation_sources: scan  left_scan right_scan # 
         scan:
           # A relative topic will be appended to the parent of the local_costmap namespace.
           # For example:
@@ -284,55 +284,10 @@ local_costmap:
           clearing: true
           marking: true
           data_type: "LaserScan"
-          raytrace_max_range: 5.0
+          raytrace_max_range: 3.0
           raytrace_min_range: 0.0
-          obstacle_max_range: 5.0
-          obstacle_min_range: 0.3
-        left_scan:
-          topic: /smit_as02_0_scan
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 5.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 5.0
-          obstacle_min_range: 0.3
-          sensor_frame: smit_scan_link
-        right_scan:
-          topic: /smit_as02_1_scan
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 5.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 5.0
-          obstacle_min_range: 0.3
-          sensor_frame: smit_scan_link
-        rear_left_scan:
-          topic: /smit_as02_2_scan
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 5.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 5.0
-          obstacle_min_range: 0.3
-          sensor_frame: smit_scan_link
-        rear_right_scan:
-          topic: /smit_as02_3_scan
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 5.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 5.0
-          obstacle_min_range: 0.3
-          sensor_frame: smit_scan_link
-
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: true
@@ -346,9 +301,9 @@ global_costmap:
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_link
-      # robot_radius: 0.22
-      footprint: "[ [0.270, 0.320], [0.270, -0.320], [-0.20, -0.320], [-0.200, 0.320] ]"
-      resolution: 0.1
+      transform_tolerance: 0.3
+      robot_radius: 0.22
+      resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       filters: ["keepout_filter", "speed_filter"]
@@ -556,13 +511,13 @@ collision_monitor:
   ros__parameters:
     enable_stamped_cmd_vel: false
     enabled: true
-    base_frame_id: "base_link"
+    base_frame_id: "base_footprint"
     odom_frame_id: "odom"
     cmd_vel_in_topic: "cmd_vel_smoothed"
     cmd_vel_out_topic: "cmd_vel"
     state_topic: "collision_monitor_state"
-    transform_tolerance: 0.5
-    source_timeout: 5.0
+    transform_tolerance: 0.3
+    source_timeout: 2.0
     base_shift_correction: true
     stop_pub_timeout: 2.0
     # Polygons represent zone around the robot for "stop", "slowdown" and "limit" action types,
@@ -577,25 +532,13 @@ collision_monitor:
       min_points: 6
       visualize: false
       enabled: true
-    observation_sources: ["scan", "left_scan", "right_scan", "rear_left_scan", "rear_right_scan"]
+    observation_sources: ["scan"]
     scan:
       type: "scan"
       topic: "scan"
       min_height: 0.15
       max_height: 2.0
       enabled: true
-    left_scan:
-      type: "scan"
-      topic: "/smit_as02_0_scan"
-    right_scan:
-      type: "scan"
-      topic: "/smit_as02_1_scan"
-    rear_left_scan:
-      type: "scan"
-      topic: "/smit_as02_2_scan"
-    rear_right_scan:
-      type: "scan"
-      topic: "/smit_as02_3_scan"
 
 docking_server:
   ros__parameters:
@@ -653,7 +596,7 @@ docking_server:
 
 loopback_simulator:
   ros__parameters:
-    base_frame_id: "base_link"
+    base_frame_id: "base_footprint"
     odom_frame_id: "odom"
     map_frame_id: "map"
     scan_frame_id: "base_scan" # tb4_loopback_simulator.launch.py remaps to 'rplidar_link'
