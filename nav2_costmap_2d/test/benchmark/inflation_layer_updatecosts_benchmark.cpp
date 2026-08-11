@@ -35,6 +35,18 @@ namespace
 {
 static constexpr const char * global_frame{"map"};
 
+template<typename StateT>
+auto getThreadIndex(const StateT & state, int) -> decltype(state.thread_index())
+{
+  return state.thread_index();
+}
+
+template<typename StateT>
+auto getThreadIndex(const StateT & state, long) -> decltype(state.thread_index)
+{
+  return state.thread_index;
+}
+
 /**
  * @brief Test wrapper for InflationLayer to expose protected methods
  */
@@ -430,7 +442,7 @@ public:
   void TearDown(benchmark::State & state) override
   {
     // Save images if enabled (only on the last iteration to avoid spam)
-    if (save_images_enabled && master_costmap_ && state.thread_index() == 0) {
+    if (save_images_enabled && master_costmap_ && getThreadIndex(state, 0) == 0) {
       static std::set<std::string> saved_files;
 
       // Create output directory if it doesn't exist
