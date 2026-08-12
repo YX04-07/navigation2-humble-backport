@@ -20,7 +20,7 @@ from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDesc
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node, PushROSNamespace, SetParameter, SetRemap
+from launch_ros.actions import Node, PushRosNamespace as PushROSNamespace, SetParameter, SetRemap
 from launch_ros.descriptions import ParameterFile
 from nav2_common.launch import HasNodeParams, LaunchConfigAsBool, RewrittenYaml
 

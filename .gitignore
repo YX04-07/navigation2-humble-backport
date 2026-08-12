@@ -33,6 +33,10 @@ build
 log
 install
 
+build_deploy
+log_deploy
+install_deploy
+
 # Visual Studio Code files
 .vscode
 
