@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "navigation2-humble-backport：NavigateToPose 源码运行时链路",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": "navigation2-humble-backport-runtime.html",
+    "repository": {
+      "url": "https://github.com/YX04-07/navigation2-humble-backport",
+      "revision": "fc28f71efd7350da4ffdf806118c2f61d068cf4b"
+    },
+    "viewBox": [1300, 560],
+    "views": [
+      {
+        "id": "main-path",
+        "label": "NavigateToPose 主链路",
+        "focus": ["nav-client", "bt-navigator", "bt-runtime", "planner-server", "planner-plugin", "controller-server", "controller-plugin", "velocity-pipeline", "robot-base"],
+        "note": "从 navigate_to_pose Action 入口追踪到规划、控制、速度安全链和底盘。"
+      },
+      {
+        "id": "costmaps-localization",
+        "label": "Costmap、定位与 TF",
+        "focus": ["localization-tf", "global-costmap", "planner-server", "local-costmap", "controller-server", "controller-plugin"],
+        "note": "查看地图、位姿与障碍物数据如何进入规划和控制。"
+      },
+      {
+        "id": "auxiliary-servers",
+        "label": "辅助执行与生命周期",
+        "focus": ["bt-runtime", "behavior-server", "smoother-server", "lifecycle-manager"],
+        "note": "恢复行为属于默认树；SmoothPath server 可用，但默认 NavigateToPose 树没有引用它。"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "nav-client", "type": "external", "label": "导航请求方", "sublabel": "NavigateToPose client", "pos": [20, 160], "size": [120, 70],
+      "sources": [{"path": "nav2_msgs/action/NavigateToPose.action", "line": 1, "label": "Action IDL"}, {"path": "nav2_simple_commander/nav2_simple_commander/robot_navigator.py", "line": 243, "label": "goToPose"}]
+    },
+    {
+      "id": "bt-navigator", "type": "backend", "label": "BT Navigator", "sublabel": "BtNavigator + NTP Navigator", "pos": [170, 160], "size": [170, 76], "tag": "nav2_bt_navigator",
+      "sources": [{"path": "nav2_bt_navigator/src/bt_navigator.cpp", "line": 47, "label": "on_configure"}, {"path": "nav2_core/include/nav2_core/behavior_tree_navigator.hpp", "line": 227, "label": "BtActionServer 构造"}, {"path": "nav2_bt_navigator/src/navigators/navigate_to_pose.cpp", "line": 93, "label": "goalReceived"}]
+    },
+    {
+      "id": "bt-runtime", "type": "backend", "label": "Behavior Tree Runtime", "sublabel": "BtActionServer + BT Engine", "pos": [380, 160], "size": [180, 76], "tag": "BT.CPP",
+      "sources": [{"path": "nav2_behavior_tree/include/nav2_behavior_tree/bt_action_server_impl.hpp", "line": 411, "label": "executeCallback"}, {"path": "nav2_behavior_tree/src/behavior_tree_engine.cpp", "line": 45, "label": "run / tickOnce"}, {"path": "nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml", "line": 7, "label": "默认 BT XML"}]
+    },
+    {
+      "id": "planner-server", "type": "backend", "label": "Planner Server", "sublabel": "compute_path_to_pose", "pos": [640, 160], "size": [170, 78], "tag": "nav2_planner",
+      "sources": [{"path": "nav2_planner/src/planner_server.cpp", "line": 46, "label": "构造 + global_costmap"}, {"path": "nav2_planner/src/planner_server.cpp", "line": 128, "label": "Action Server"}, {"path": "nav2_planner/src/planner_server.cpp", "line": 536, "label": "computePlan"}]
+    },
+    {
+      "id": "planner-plugin", "type": "cloud", "label": "GlobalPlanner Plugin", "sublabel": "GridBased = NavfnPlanner", "pos": [850, 160], "size": [190, 78], "tag": "pluginlib / checked-in config",
+      "sources": [{"path": "nav2_planner/src/planner_server.cpp", "line": 95, "label": "createUniqueInstance"}, {"path": "nav2_planner/src/planner_server.cpp", "line": 640, "label": "getPlan / createPlan"}, {"path": "nav2_navfn_planner/src/navfn_planner.cpp", "line": 121, "label": "Navfn createPlan"}]
+    },
+    {
+      "id": "controller-server", "type": "backend", "label": "Controller Server", "sublabel": "follow_path control loop", "pos": [640, 300], "size": [170, 78], "tag": "nav2_controller",
+      "sources": [{"path": "nav2_controller/src/controller_server.cpp", "line": 196, "label": "Action Server"}, {"path": "nav2_controller/src/controller_server.cpp", "line": 491, "label": "computeControl"}, {"path": "nav2_controller/src/controller_server.cpp", "line": 708, "label": "computeAndPublishVelocity"}]
+    },
+    {
+      "id": "controller-plugin", "type": "cloud", "label": "Controller Plugin", "sublabel": "FollowPath = MPPIController", "pos": [850, 300], "size": [190, 78], "tag": "pluginlib / checked-in config",
+      "sources": [{"path": "nav2_controller/src/controller_server.cpp", "line": 162, "label": "createUniqueInstance"}, {"path": "nav2_controller/src/controller_server.cpp", "line": 736, "label": "plugin 调用"}, {"path": "nav2_mppi_controller/src/controller.cpp", "line": 103, "label": "MPPI compute"}]
+    },
+    {
+      "id": "velocity-pipeline", "type": "messagebus", "label": "速度安全链 / cmd_vel", "sublabel": "Smoother → Collision Monitor", "pos": [1090, 297], "size": [180, 84], "tag": "cmd_vel_nav → smoothed → cmd_vel",
+      "sources": [{"path": "nav2_bringup/launch/navigation_launch.py", "line": 163, "label": "cmd_vel remap"}, {"path": "nav2_velocity_smoother/src/velocity_smoother.cpp", "line": 142, "label": "平滑器 I/O"}, {"path": "nav2_collision_monitor/src/collision_monitor_node.cpp", "line": 65, "label": "碰撞监控 I/O"}]
+    },
+    {
+      "id": "robot-base", "type": "external", "label": "机器人底盘接口", "sublabel": "cmd_vel in；odom / scan / TF out", "pos": [1090, 440], "size": [180, 74], "tag": "仓库外实现 / 集成契约"
+    },
+    {
+      "id": "global-costmap", "type": "database", "label": "Global Costmap", "sublabel": "Costmap2DROS + layers", "pos": [640, 30], "size": [170, 74], "tag": "map / scan / TF + clear svc",
+      "sources": [{"path": "nav2_costmap_2d/src/costmap_2d_ros.cpp", "line": 129, "label": "on_configure"}, {"path": "nav2_costmap_2d/src/costmap_2d_ros.cpp", "line": 157, "label": "Layer pluginlib"}, {"path": "nav2_bringup/params/nav2_params.yaml", "line": 297, "label": "默认 layers"}]
+    },
+    {
+      "id": "local-costmap", "type": "database", "label": "Local Costmap", "sublabel": "Costmap2DROS + layers", "pos": [640, 440], "size": [170, 74], "tag": "scan / TF + clear svc",
+      "sources": [{"path": "nav2_controller/src/controller_server.cpp", "line": 38, "label": "owned child node"}, {"path": "nav2_costmap_2d/src/layered_costmap.cpp", "line": 136, "label": "updateMap"}, {"path": "nav2_bringup/params/nav2_params.yaml", "line": 240, "label": "默认 layers"}]
+    },
+    {
+      "id": "localization-tf", "type": "messagebus", "label": "Map Server + AMCL + TF", "sublabel": "map / scan；map→odom→base", "pos": [390, 30], "size": [180, 74], "tag": "localization_launch",
+      "sources": [{"path": "nav2_map_server/src/map_server/map_server.cpp", "line": 114, "label": "map publisher"}, {"path": "nav2_amcl/src/amcl_node.cpp", "line": 587, "label": "AMCL update + TF"}, {"path": "nav2_amcl/src/amcl_node.cpp", "line": 899, "label": "map→odom"}]
+    },
+    {
+      "id": "behavior-server", "type": "backend", "label": "Behavior Server", "sublabel": "spin / backup / wait Actions", "pos": [380, 440], "size": [180, 74], "tag": "pluginlib；cmd_vel_nav remap",
+      "sources": [{"path": "nav2_behaviors/src/behavior_server.cpp", "line": 75, "label": "loadBehaviorPlugins"}, {"path": "nav2_behaviors/include/nav2_behaviors/timed_behavior.hpp", "line": 114, "label": "Action + cmd_vel"}, {"path": "nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml", "line": 48, "label": "默认恢复子树"}]
+    },
+    {
+      "id": "smoother-server", "type": "backend", "label": "Smoother Server", "sublabel": "smooth_path（默认 BT 未调用）", "pos": [170, 440], "size": [170, 74], "tag": "pluginlib；global costmap",
+      "sources": [{"path": "nav2_smoother/src/nav2_smoother.cpp", "line": 47, "label": "on_configure"}, {"path": "nav2_smoother/src/nav2_smoother.cpp", "line": 93, "label": "Action Server"}, {"path": "nav2_smoother/src/nav2_smoother.cpp", "line": 255, "label": "smoothPlan"}]
+    },
+    {
+      "id": "lifecycle-manager", "type": "security", "label": "Lifecycle Managers", "sublabel": "navigation + localization", "pos": [170, 30], "size": [170, 74], "tag": "Configure → Activate + bond",
+      "sources": [{"path": "nav2_lifecycle_manager/src/lifecycle_manager.cpp", "line": 297, "label": "changeStateForNode"}, {"path": "nav2_lifecycle_manager/src/lifecycle_manager.cpp", "line": 367, "label": "startup"}, {"path": "nav2_bringup/launch/navigation_launch.py", "line": 283, "label": "managed nodes"}]
+    }
+  ],
+  "boundaries": [
+    {"kind": "region", "label": "Nav2 managed runtime（LifecycleNode）", "wraps": ["bt-navigator", "planner-server", "planner-plugin", "controller-server", "controller-plugin", "velocity-pipeline", "global-costmap", "local-costmap", "behavior-server", "smoother-server"]}
+  ],
+  "connections": [
+    {"id": "navigate-action", "from": "nav-client", "to": "bt-navigator", "label": "Action · navigate_to_pose", "labelAt": [155, 150], "variant": "emphasis"},
+    {"id": "navigator-runtime", "from": "bt-navigator", "to": "bt-runtime", "label": "load XML/ID · executeCallback", "labelAt": [360, 150], "variant": "emphasis"},
+    {"id": "bt-compute-path", "from": "bt-runtime", "to": "planner-server", "label": "Action · compute_path_to_pose", "labelAt": [600, 150], "variant": "emphasis"},
+    {"id": "planner-call", "from": "planner-server", "to": "planner-plugin", "label": "pluginlib · createPlan()", "labelAt": [820, 150], "variant": "emphasis"},
+    {"id": "bt-follow-path", "from": "bt-runtime", "to": "controller-server", "label": "Action · follow_path {path}", "labelAt": [600, 280], "variant": "emphasis"},
+    {"id": "controller-call", "from": "controller-server", "to": "controller-plugin", "label": "pluginlib · computeVelocityCommands()", "labelAt": [820, 290], "variant": "emphasis"},
+    {"id": "publish-command", "from": "controller-plugin", "to": "velocity-pipeline", "label": "return TwistStamped · publish cmd_vel_nav", "labelAt": [1060, 286], "route": "straight", "fromSide": "right", "toSide": "left", "variant": "emphasis"},
+    {"id": "base-command", "from": "velocity-pipeline", "to": "robot-base", "label": "Topic · cmd_vel (Twist)", "labelAt": [1180, 420], "variant": "emphasis"},
+    {"id": "global-costmap-read", "from": "global-costmap", "to": "planner-server", "label": "owned child · Costmap2D* + TF", "labelAt": [725, 130]},
+    {"id": "local-costmap-read", "from": "local-costmap", "to": "controller-server", "label": "owned child · pose / plan transform", "labelAt": [725, 420]},
+    {"id": "localization-global", "from": "localization-tf", "to": "global-costmap", "label": "Topics/TF · map + scan + transforms", "labelAt": [590, 18], "variant": "dashed"},
+    {"id": "bt-behaviors", "from": "bt-runtime", "to": "behavior-server", "label": "Actions · spin / wait / backup", "labelAt": [470, 420]},
+    {"id": "bt-smoothing", "from": "bt-runtime", "to": "smoother-server", "label": "可选 Action · smooth_path（默认树未引用）", "labelAt": [340, 400], "variant": "dashed"},
+    {"id": "lifecycle-managed", "from": "lifecycle-manager", "to": "bt-navigator", "label": "Lifecycle · change/get_state + bond", "labelAt": [255, 130], "variant": "security"},
+    {"id": "lifecycle-localization", "from": "lifecycle-manager", "to": "localization-tf", "label": "Lifecycle · map_server / amcl", "labelAt": [470, 120], "route": "straight", "fromSide": "right", "toSide": "left", "variant": "security"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "阅读边界", "items": ["实线主链：Action → BT tick → planner/controller pluginlib → cmd_vel；虚线为可选或配置关系。", "默认：GridBased=Navfn、FollowPath=MPPI；BT 含恢复行为，但不调用 smooth_path。", "checkout：main@fc28f71；不存在 humble-backport-devel；底盘实现位于仓库外。"]}
+  ]
+}
