@@ -35,6 +35,11 @@ namespace nav2_bt_navigator
 /**
  * @class NavigateThroughPosesNavigator
  * @brief A navigator for navigating to a a bunch of intermediary poses
+ *
+ * 中文说明：
+ * - 处理多目标点序列导航请求（`NavigateThroughPoses` action）
+ * - 在行为树黑板上初始化并维护多目标相关的数据（目标列表、路径、航点状态等）
+ * - 支持在多个中间点间顺序导航并报告每个航点的状态
  */
 class NavigateThroughPosesNavigator
   : public nav2_core::BehaviorTreeNavigator<nav2_msgs::action::NavigateThroughPoses>
@@ -115,6 +120,7 @@ protected:
 
   // Odometry smoother object
   std::shared_ptr<nav2_util::OdomSmoother> odom_smoother_;
+  // 中文注：`odom_smoother_` 提供平滑速度估计，常用于判断是否到达航点或速度阈值
   size_t start_index_ = 0;
   nav_msgs::msg::Path previous_path_;
   double search_window_;

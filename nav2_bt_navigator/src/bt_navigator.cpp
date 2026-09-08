@@ -32,6 +32,9 @@ using nav2::declare_parameter_if_not_declared;
 namespace nav2_bt_navigator
 {
 
+// Constructor
+// - 初始化为一个 LifecycleNode，名称为 "bt_navigator"
+// - 配置 `class_loader_` 以便在运行时加载导航器插件（实现 `nav2_core::NavigatorBase`）
 BtNavigator::BtNavigator(rclcpp::NodeOptions options)
 : nav2::LifecycleNode("bt_navigator", "",
     options.automatically_declare_parameters_from_overrides(true)),
@@ -40,26 +43,35 @@ BtNavigator::BtNavigator(rclcpp::NodeOptions options)
   RCLCPP_INFO(get_logger(), "Creating");
 }
 
+// Destructor: 清理由智能指针管理的资源（自动完成）
 BtNavigator::~BtNavigator()
 {
 }
 
+// on_configure 生命周期回调：
+// - 初始化 TF buffer 和 listener
+// - 读取并声明节点参数（frame、topics、滤波时长等）
+// - 准备行为树插件库列表（内置 + 用户自定义）
+// - 创建 `nav2_util::OdomSmoother` 用于获取机器人速度信息
+// - 为每个导航器 id 加载并配置相应插件
 nav2::CallbackReturn
 BtNavigator::on_configure(const rclcpp_lifecycle::State & state)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
 
+  // TF buffer/listener，用于坐标变换查询
   tf_ = nav2::create_transform_buffer(this);
   tf_->setUsingDedicatedThread(true);
   tf_listener_ = nav2::create_transform_listener(*tf_, this, true);
 
+  // 参数读取（若未声明则使用默认值）
   global_frame_ = this->declare_or_get_parameter("global_frame", std::string("map"));
   robot_frame_ = this->declare_or_get_parameter("robot_base_frame", std::string("base_link"));
   transform_tolerance_ = this->declare_or_get_parameter("transform_tolerance", 0.1);
   odom_topic_ = this->declare_or_get_parameter("odom_topic", std::string("odom"));
   filter_duration_ = this->declare_or_get_parameter("filter_duration", 0.3);
 
-  // Libraries to pull plugins (BT Nodes) from
+  // Libraries to pull plugins (BT Nodes) from: 内置 + 用户自定义
   std::vector<std::string> plugin_lib_names;
   plugin_lib_names = nav2_util::split(nav2::details::BT_BUILTIN_PLUGINS, ';');
 
@@ -70,17 +82,18 @@ BtNavigator::on_configure(const rclcpp_lifecycle::State & state)
     plugin_lib_names.end(), user_defined_plugins.begin(),
     user_defined_plugins.end());
 
+  // 用于将 transform 等信息传递给行为树节点的辅助结构
   nav2_core::FeedbackUtils feedback_utils;
   feedback_utils.tf = tf_;
   feedback_utils.global_frame = global_frame_;
   feedback_utils.robot_frame = robot_frame_;
   feedback_utils.transform_tolerance = transform_tolerance_;
 
-  // Odometry smoother object for getting current speed
+  // Odometry smoother 对象，用于获取平滑后的速度信息
   auto node = shared_from_this();
   odom_smoother_ = std::make_shared<nav2_util::OdomSmoother>(node, filter_duration_, odom_topic_);
 
-  // Navigator defaults
+  // Navigator 默认配置（id 和类型）
   const std::vector<std::string> default_navigator_ids = {
     "navigate_to_pose",
     "navigate_through_poses"
@@ -100,7 +113,7 @@ BtNavigator::on_configure(const rclcpp_lifecycle::State & state)
     }
   }
 
-  // Load navigator plugins
+  // Load navigator plugins：使用 class_loader 在运行时创建实例并调用其 on_configure
   for (size_t i = 0; i != navigator_ids.size(); i++) {
     try {
       std::string navigator_type = nav2::get_plugin_type_param(node, navigator_ids[i]);
@@ -126,6 +139,7 @@ BtNavigator::on_configure(const rclcpp_lifecycle::State & state)
   return nav2::CallbackReturn::SUCCESS;
 }
 
+// on_activate 生命周期回调：激活所有已加载的导航器插件并创建 bond 连接
 nav2::CallbackReturn
 BtNavigator::on_activate(const rclcpp_lifecycle::State & state)
 {
@@ -143,6 +157,7 @@ BtNavigator::on_activate(const rclcpp_lifecycle::State & state)
   return nav2::CallbackReturn::SUCCESS;
 }
 
+// on_deactivate 生命周期回调：停用所有导航器并销毁 bond 连接
 nav2::CallbackReturn
 BtNavigator::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
 {
@@ -159,6 +174,7 @@ BtNavigator::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
   return nav2::CallbackReturn::SUCCESS;
 }
 
+// on_cleanup 生命周期回调：清理资源，重置 TF，并调用每个导航器插件的 cleanup
 nav2::CallbackReturn
 BtNavigator::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 {
@@ -179,6 +195,7 @@ BtNavigator::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   return nav2::CallbackReturn::SUCCESS;
 }
 
+// on_shutdown 生命周期回调：节点即将关闭时的最后步骤（这里目前不做额外操作）
 nav2::CallbackReturn
 BtNavigator::on_shutdown(const rclcpp_lifecycle::State & /*state*/)
 {

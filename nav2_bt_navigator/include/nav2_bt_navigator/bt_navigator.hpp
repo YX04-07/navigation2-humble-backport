@@ -35,6 +35,12 @@ namespace nav2_bt_navigator
  * @brief An action server that uses behavior tree for navigating a robot to its
  * goal position.
  */
+// 中文说明：
+// BtNavigator 是一个基于生命周期（Lifecycle）的节点，负责：
+// - 管理 TF buffer/listener、里程计平滑器等共享资源
+// - 读取与声明运行时参数
+// - 在运行时加载并管理具体的导航器插件（navigate_to_pose 等）
+// - 转发生命周期回调至各导航器插件并维护 plugin_muxer
 class BtNavigator : public nav2::LifecycleNode
 {
 public:
@@ -101,6 +107,7 @@ protected:
   // Spinning transform that can be used by the node
   nav2::TransformBuffer::SharedPtr tf_;
   nav2::TransformListener::SharedPtr tf_listener_;
+  // 中文注：`tf_` 和 `tf_listener_` 用于查询坐标变换，listener 在 buffer 之上运行
 };
 
 }  // namespace nav2_bt_navigator

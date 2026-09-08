@@ -34,6 +34,11 @@ namespace nav2_bt_navigator
 /**
  * @class NavigateToPoseNavigator
  * @brief A navigator for navigating to a specified pose
+ *
+ * 中文说明：
+ * - 处理单目标点导航请求（`NavigateToPose` action）
+ * - 在行为树黑板上初始化并维护与目标相关的数据（路径、跟踪反馈等）
+ * - 使用 `odom_smoother_` 获取平滑后的速度信息以改善行为树决策
  */
 class NavigateToPoseNavigator
   : public nav2_core::BehaviorTreeNavigator<nav2_msgs::action::NavigateToPose>
@@ -131,6 +136,7 @@ protected:
 
   // Odometry smoother object
   std::shared_ptr<nav2_util::OdomSmoother> odom_smoother_;
+  // 中文注：`odom_smoother_` 用于提供平滑速度估计，帮助行为树节点做速度相关判断
   size_t start_index_ = 0;
   nav_msgs::msg::Path previous_path_;
   double search_window_;

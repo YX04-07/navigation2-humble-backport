@@ -31,6 +31,7 @@ NavigateThroughPosesNavigator::configure(
   nav2::LifecycleNode::WeakPtr parent_node,
   std::shared_ptr<nav2_util::OdomSmoother> odom_smoother)
 {
+  // 初始化状态与参数
   start_time_ = rclcpp::Time(0);
   auto node = parent_node.lock();
 
@@ -48,7 +49,7 @@ NavigateThroughPosesNavigator::configure(
 
   search_window_ = node->declare_or_get_parameter(getName() + "search_window", 2.0);
 
-  // Odometry smoother object for getting current speed
+  // 保存里程计平滑器，用于后续反馈中获取平滑速度
   odom_smoother_ = odom_smoother;
 
   bool enable_groot_monitoring =
@@ -56,6 +57,7 @@ NavigateThroughPosesNavigator::configure(
   int groot_server_port =
     node->declare_or_get_parameter(getName() + ".groot_server_port", 1669);
 
+  // 配置 Groot（行为树可视化）监控选项
   bt_action_server_->setGrootMonitoring(
     enable_groot_monitoring,
     groot_server_port);
@@ -76,12 +78,14 @@ NavigateThroughPosesNavigator::getDefaultBTFilepath(
     pkg_share_dir +
     "/behavior_trees/navigate_through_poses_w_replanning_and_recovery.xml");
 
+  // 返回默认行为树 XML 的路径
   return default_bt_xml_filename;
 }
 
 bool
 NavigateThroughPosesNavigator::goalReceived(ActionT::Goal::ConstSharedPtr goal)
 {
+  // 收到多目标 action 请求时，初始化并验证所有目标
   return initializeGoalPoses(goal);
 }
 
@@ -119,6 +123,7 @@ NavigateThroughPosesNavigator::goalCompleted(
     }
   }
 
+  // 将最终的 waypoint 状态写入 action result 返回给用户
   result->waypoint_statuses = std::move(waypoint_statuses);
 }
 
@@ -127,12 +132,12 @@ NavigateThroughPosesNavigator::onLoop()
 {
   using namespace nav2_util::geometry_utils;  // NOLINT
 
-  // action server feedback (pose, duration of task,
-  // number of recoveries, and distance remaining to goal, etc)
+  // 周期性回调：构造并发布 action feedback（当前位姿、剩余距离、航点状态等）
   auto feedback_msg = std::make_shared<ActionT::Feedback>();
 
   auto blackboard = bt_action_server_->getBlackboard();
 
+  // 获取黑板上的目标列表和航点状态
   nav_msgs::msg::Goals goal_poses;
   [[maybe_unused]] auto res = blackboard->get(goals_blackboard_id_, goal_poses);
 
@@ -144,6 +149,7 @@ NavigateThroughPosesNavigator::onLoop()
     return;
   }
 
+  // 获取机器人当前位姿，如不可用则记录错误并返回
   geometry_msgs::msg::PoseStamped current_pose;
   if (!nav2_util::getCurrentPose(
       current_pose, *feedback_utils_.tf,
@@ -175,15 +181,12 @@ NavigateThroughPosesNavigator::onLoop()
     double distance_remaining =
       nav2_util::geometry_utils::calculate_path_length(current_path, start_index_);
 
-    // Default value for time remaining
+    // 计算剩余距离并估计剩余时间（基于平滑速度）
     rclcpp::Duration estimated_time_remaining = rclcpp::Duration::from_seconds(0.0);
 
-    // Get current speed
     geometry_msgs::msg::Twist current_odom = odom_smoother_->getTwist();
     double current_linear_speed = std::hypot(current_odom.linear.x, current_odom.linear.y);
 
-    // Calculate estimated time taken to goal if speed is higher than 1cm/s
-    // and at least 10cm to go
     if ((std::abs(current_linear_speed) > 0.01) && (distance_remaining > 0.1)) {
       estimated_time_remaining =
         rclcpp::Duration::from_seconds(distance_remaining / std::abs(current_linear_speed));
@@ -212,6 +215,7 @@ NavigateThroughPosesNavigator::onLoop()
 void
 NavigateThroughPosesNavigator::onPreempt(ActionT::Goal::ConstSharedPtr goal)
 {
+  // 处理多目标的抢占请求，仅当行为树匹配时接受 pending goal
   RCLCPP_INFO(logger_, "Received goal preemption request");
 
   if (goal->behavior_tree == bt_action_server_->getCurrentBTFilenameOrID() ||
@@ -241,6 +245,7 @@ NavigateThroughPosesNavigator::onPreempt(ActionT::Goal::ConstSharedPtr goal)
 bool
 NavigateThroughPosesNavigator::initializeGoalPoses(ActionT::Goal::ConstSharedPtr goal)
 {
+  // 初始化并验证所有目标点：检查当前位姿并将每个目标转换到全局 frame
   geometry_msgs::msg::PoseStamped current_pose;
   if (!nav2_util::getCurrentPose(
       current_pose, *feedback_utils_.tf,
@@ -272,6 +277,7 @@ NavigateThroughPosesNavigator::initializeGoalPoses(ActionT::Goal::ConstSharedPtr
     i++;
   }
 
+  // 打印将要依次经过的目标信息
   if (goals_array.goals.size() > 0) {
     RCLCPP_INFO(
       logger_, "Begin navigating from current location through %zu poses to (%.2f, %.2f)",
