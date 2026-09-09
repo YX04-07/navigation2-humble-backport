@@ -19,6 +19,11 @@
 #include <cmath>
 
 #include "nav2_controller/plugins/adaptive_tolerance_goal_checker.hpp"
+
+/**
+ * @file adaptive_tolerance_goal_checker.cpp
+ * @brief 实现精细/粗略两级位置容差及多种停滞接受条件的目标检查算法。
+ */
 #include "pluginlib/class_list_macros.hpp"
 #include "angles/angles.h"
 #include "nav2_ros_common/node_utils.hpp"

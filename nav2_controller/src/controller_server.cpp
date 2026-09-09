@@ -27,6 +27,14 @@
 #include "nav2_util/path_utils.hpp"
 #include "nav2_controller/controller_server.hpp"
 
+/**
+ * @file controller_server.cpp
+ * @brief 实现 Controller Server 的生命周期管理、插件装载和 FollowPath 控制循环。
+ *
+ * 本文件负责调度而不是实现某一种控制算法：PathHandler 准备局部路径，
+ * ProgressChecker 检查是否卡住，GoalChecker 判断是否到达，Controller 计算速度命令。
+ */
+
 using namespace std::chrono_literals;
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
@@ -53,6 +61,7 @@ ControllerServer::ControllerServer(const rclcpp::NodeOptions & options)
 
 ControllerServer::~ControllerServer()
 {
+  // 必须先销毁插件对象，再停止相关线程并由 ClassLoader 卸载共享库。
   progress_checkers_.clear();
   goal_checkers_.clear();
   controllers_.clear();
@@ -81,6 +90,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
   }
   params_ = param_handler_->getParams();
 
+  // pluginlib 根据参数中的 C++ 类型名创建实例，逻辑 ID 用于配置和 Action 选择。
   for (size_t i = 0; i != params_->progress_checker_ids.size(); i++) {
     try {
       nav2_core::ProgressChecker::Ptr progress_checker =
@@ -490,6 +500,8 @@ bool ControllerServer::goalReceived(std::shared_ptr<const Action::Goal> goal)
 
 void ControllerServer::computeControl()
 {
+  // 控制任务期间锁定服务器级参数，保证同一次 Action 使用一致的控制配置。
+  // 各插件拥有自己的参数回调和互斥锁，不受此锁限制。
   std::lock_guard<std::mutex> lock_reinit(param_handler_->getMutex());
 
   RCLCPP_INFO(get_logger(), "Received a goal, begin computing control effort.");
@@ -500,6 +512,7 @@ void ControllerServer::computeControl()
       return;  //  goal would be nullptr if action_server_ is deactivate.
     }
 
+    // 第一阶段：解析 Action 请求的四类插件；单插件配置允许请求 ID 为空。
     std::string c_name = goal->controller_id;
     std::string current_controller;
     if (findControllerId(c_name, current_controller)) {
@@ -532,6 +545,7 @@ void ControllerServer::computeControl()
       throw nav2_core::ControllerException("Failed to find path handler name: " + ph_name);
     }
 
+    // 第二阶段：装载路径并重置跨任务状态。
     setPlannerPath(goal->path);
     if (!current_progress_checker_.empty()) {
       progress_checkers_[current_progress_checker_]->reset();
@@ -539,6 +553,7 @@ void ControllerServer::computeControl()
 
     last_valid_cmd_time_ = now();
     nav2::Rate loop_rate(this, params_->controller_frequency);
+    // 第三阶段：按配置频率处理取消、代价地图同步、抢占、到达检查和速度计算。
     while (rclcpp::ok()) {
       auto start_time = this->now();
 
@@ -583,6 +598,7 @@ void ControllerServer::computeControl()
         loop_rate.reset();
       }
     }
+  // 第四阶段：将 Nav2 控制异常转换为 FollowPath Action 的稳定错误码。
   } catch (nav2_core::InvalidController & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
     onGoalExit(true);
@@ -691,6 +707,7 @@ void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
     throw nav2_core::InvalidPath("Path is empty.");
   }
   controllers_[current_controller_]->newPathReceived(path);
+  // 控制器可缓存整条参考路径；路径处理器负责维护、裁剪和坐标变换。
   path_handlers_[current_path_handler_]->setPlan(path);
 
   end_pose_ = path.poses.back();
@@ -707,6 +724,7 @@ void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
 
 void ControllerServer::computeAndPublishVelocity()
 {
+  // 单周期数据流：机器人位姿/速度 -> 进度检查 -> 局部路径 -> 控制器 -> 命令与反馈。
   geometry_msgs::msg::PoseStamped pose;
 
   if (!getRobotPose(pose)) {
@@ -721,6 +739,7 @@ void ControllerServer::computeAndPublishVelocity()
 
   geometry_msgs::msg::Twist twist = getThresholdedTwist(odom_sub_->getRawTwist());
 
+  // PathHandler 将最终目标和当前相关的路径段变换到局部代价地图坐标系。
   geometry_msgs::msg::PoseStamped goal =
     path_handlers_[current_path_handler_]->getTransformedGoal(pose.header.stamp);
   // Get the [start, end) iterators under map frame to be used for control.
@@ -735,6 +754,7 @@ void ControllerServer::computeAndPublishVelocity()
 
   geometry_msgs::msg::TwistStamped cmd_vel_2d;
 
+  // Controller 是真正生成速度命令的算法插件，Server 只负责输入组织和容错。
   try {
     cmd_vel_2d =
       controllers_[current_controller_]->computeVelocityCommands(
@@ -772,6 +792,7 @@ void ControllerServer::computeAndPublishVelocity()
   RCLCPP_DEBUG(get_logger(), "Publishing velocity at time %.2f", now().seconds());
   publishVelocity(cmd_vel_2d);
 
+  // 跟踪反馈用于观测路径偏差、剩余长度等指标，不参与本周期控制器算速。
   nav2_msgs::msg::TrackingFeedback current_tracking_feedback;
 
   if (current_path_.poses.size() >= 2) {
@@ -837,6 +858,7 @@ void ControllerServer::computeAndPublishVelocity()
 void ControllerServer::updateGlobalPath()
 {
   if (action_server_->is_preempt_requested()) {
+    // 抢占目标不仅能替换路径，也能切换四类插件；新路径会重置路径与目标检查状态。
     RCLCPP_INFO(get_logger(), "Passing new path to controller.");
     auto goal = action_server_->accept_pending_goal();
     std::string current_controller;
@@ -928,6 +950,7 @@ void ControllerServer::publishZeroVelocity()
 
 void ControllerServer::onGoalExit(bool force_stop)
 {
+  // 失败和取消会强制停车；成功时是否停车由 publish_zero_velocity 参数决定。
   if (params_->publish_zero_velocity || force_stop) {
     publishZeroVelocity();
   }
@@ -986,4 +1009,5 @@ void ControllerServer::speedLimitCallback(const nav2_msgs::msg::SpeedLimit::Cons
 // Register the component with class_loader.
 // This acts as a sort of entry point, allowing the component to be discoverable when its library
 // is being loaded into a running process.
+// 中文：这是 ROS 组件节点注册入口，与算法插件的 PLUGINLIB_EXPORT_CLASS 用途不同。
 RCLCPP_COMPONENTS_REGISTER_NODE(nav2_controller::ControllerServer)

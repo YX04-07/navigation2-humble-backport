@@ -16,6 +16,11 @@
 #include <string>
 #include <limits>
 #include "nav2_controller/plugins/position_goal_checker.hpp"
+
+/**
+ * @file position_goal_checker.cpp
+ * @brief 实现忽略目标朝向、仅检查 XY 位置和剩余路径长度的目标检查算法。
+ */
 #include "pluginlib/class_list_macros.hpp"
 #include "nav2_ros_common/node_utils.hpp"
 #include "nav2_util/geometry_utils.hpp"

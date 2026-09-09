@@ -37,6 +37,11 @@
 #include <limits>
 #include <vector>
 #include "nav2_controller/plugins/simple_goal_checker.hpp"
+
+/**
+ * @file simple_goal_checker.cpp
+ * @brief 实现位置、朝向和剩余路径长度目标判定，以及状态锁存与滞回逻辑。
+ */
 #include "pluginlib/class_list_macros.hpp"
 #include "angles/angles.h"
 #include "nav2_ros_common/node_utils.hpp"

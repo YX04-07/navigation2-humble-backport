@@ -13,6 +13,11 @@
 // limitations under the License.
 
 #include "nav2_controller/plugins/pose_progress_checker.hpp"
+
+/**
+ * @file pose_progress_checker.cpp
+ * @brief 实现同时考虑平移距离和旋转角度的进度检查算法。
+ */
 #include <cmath>
 #include <string>
 #include <memory>

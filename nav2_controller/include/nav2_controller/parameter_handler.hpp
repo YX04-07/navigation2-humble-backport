@@ -15,6 +15,14 @@
 #ifndef NAV2_CONTROLLER__PARAMETER_HANDLER_HPP_
 #define NAV2_CONTROLLER__PARAMETER_HANDLER_HPP_
 
+/**
+ * @file parameter_handler.hpp
+ * @brief Controller Server 参数结构和动态参数处理器的声明。
+ *
+ * 参数分为服务器级参数和插件级参数。服务器级参数由 ParameterHandler 管理；名称中
+ * 带点号的插件私有参数（例如 goal_checker.xy_goal_tolerance）由对应插件自行管理。
+ */
+
 #include <string>
 #include <vector>
 #include <memory>
@@ -29,6 +37,12 @@
 namespace nav2_controller
 {
 
+/**
+ * @brief Controller Server 运行参数及四类插件的“逻辑 ID -> C++ 类型”映射。
+ *
+ * *_ids 是配置和 Action 中使用的实例名称，*_types 是 pluginlib 创建实例时使用的
+ * 完整 C++ 类型名，两者按相同下标一一对应。
+ */
 struct Parameters
 {
   double controller_frequency;
@@ -56,12 +70,15 @@ struct Parameters
 /**
  * @class nav2_controller::ParameterHandler
  * @brief Handles parameters and dynamic parameters for Controller Server
+ * 中文：负责声明、读取、校验并更新 Controller Server 参数，同时解析插件配置。
  */
 class ParameterHandler : public nav2_util::ParameterHandler<Parameters>
 {
 public:
   /**
    * @brief Constructor for nav2_controller::ParameterHandler
+    * 中文：加载服务器参数和四类插件列表，并解析每个插件 ID 对应的 pluginlib 类型。
+    * 调用方：ControllerServer::on_configure() 通过 make_unique 创建。
    */
   ParameterHandler(
     const nav2::LifecycleNode::SharedPtr & node,
@@ -73,6 +90,9 @@ protected:
    * This callback is triggered when one or more parameters are about to be updated.
    * It checks the validity of parameter values and rejects updates that would lead
    * to invalid or inconsistent configurations
+  * 中文：插件私有参数交给插件校验；服务器级 double 参数通常必须非负，
+  * failure_tolerance 例外，因为 -1 表示无限等待。
+  * 调用方：ParameterHandler 激活后，由 rclcpp 参数框架在设置参数前间接调用。
    * @param parameters List of parameters that are being updated.
    * @return rcl_interfaces::msg::SetParametersResult Result indicating whether the update is accepted.
    */
@@ -83,6 +103,8 @@ protected:
    * @brief Apply parameter updates after validation
    * This callback is executed when parameters have been successfully updated.
    * It updates the internal configuration of the node with the new parameter values.
+  * 中文：仅更新允许运行时修改的服务器参数；若控制循环正持有互斥锁则拒绝本次更新。
+  * 调用方：ParameterHandler 激活后，由 rclcpp 参数框架在参数验证成功后间接调用。
    * @param parameters List of parameters that have been updated.
    */
   void updateParametersCallback(const std::vector<rclcpp::Parameter> & parameters) override;

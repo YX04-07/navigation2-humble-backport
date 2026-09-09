@@ -13,6 +13,11 @@
 // limitations under the License.
 
 #include "nav2_controller/plugins/simple_progress_checker.hpp"
+
+/**
+ * @file simple_progress_checker.cpp
+ * @brief 实现“指定时间内至少移动指定距离”的进度检查算法及其动态参数回调。
+ */
 #include <cmath>
 #include <string>
 #include <memory>

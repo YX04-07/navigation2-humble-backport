@@ -1,3 +1,8 @@
+<!--
+  pluginlib 插件描述文件：把共享库、具体 C++ 类型和 nav2_core 基接口关联起来。
+  ControllerServer 先从参数读取逻辑插件 ID，再读取 <ID>.plugin 得到这里的 type，
+  最后由对应 ClassLoader 动态加载 library 并创建插件实例。
+-->
 <class_libraries>
   <library path="simple_progress_checker">
     <class type="nav2_controller::SimpleProgressChecker" base_class_type="nav2_core::ProgressChecker">

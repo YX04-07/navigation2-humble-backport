@@ -38,6 +38,11 @@
 #include <limits>
 #include <vector>
 #include "nav2_controller/plugins/stopped_goal_checker.hpp"
+
+/**
+ * @file stopped_goal_checker.cpp
+ * @brief 实现在简单目标条件基础上额外要求机器人停止的目标检查算法。
+ */
 #include "pluginlib/class_list_macros.hpp"
 #include "nav2_ros_common/node_utils.hpp"
 

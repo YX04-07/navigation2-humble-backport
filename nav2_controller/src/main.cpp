@@ -17,6 +17,18 @@
 #include "nav2_controller/controller_server.hpp"
 #include "rclcpp/rclcpp.hpp"
 
+/**
+ * @file main.cpp
+ * @brief Controller Server 的独立进程入口。
+ *
+ * 该入口直接创建并 spin ControllerServer；若使用组件容器，则通过
+ * controller_server.cpp 末尾的 RCLCPP_COMPONENTS_REGISTER_NODE 加载同一个节点类。
+ */
+
+/**
+ * @brief 初始化 ROS 2、运行 ControllerServer，节点退出后关闭 ROS 2。
+ * 调用方：由操作系统的 C/C++ 运行时在启动 nav2_controller 可执行程序时调用。
+ */
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);

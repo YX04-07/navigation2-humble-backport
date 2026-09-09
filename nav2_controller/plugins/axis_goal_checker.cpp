@@ -19,6 +19,11 @@
 
 #include "angles/angles.h"
 #include "nav2_controller/plugins/axis_goal_checker.hpp"
+
+/**
+ * @file axis_goal_checker.cpp
+ * @brief 实现基于路径末段纵向/横向投影误差的目标检查算法。
+ */
 #include "pluginlib/class_list_macros.hpp"
 #include "nav2_ros_common/node_utils.hpp"
 #include "nav2_util/geometry_utils.hpp"

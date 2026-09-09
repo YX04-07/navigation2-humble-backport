@@ -21,6 +21,11 @@
 
 #include "nav2_controller/parameter_handler.hpp"
 
+/**
+ * @file parameter_handler.cpp
+ * @brief 实现 Controller Server 参数读取、插件类型解析和动态参数更新。
+ */
+
 namespace nav2_controller
 {
 
@@ -100,6 +105,7 @@ ParameterHandler::ParameterHandler(
     }
   }
 
+  // 每类插件维护两个等长数组：逻辑 ID 用于选择实例，类型名用于 pluginlib 创建实例。
   params_.controller_types.resize(params_.controller_ids.size());
   params_.goal_checker_types.resize(params_.goal_checker_ids.size());
   params_.progress_checker_types.resize(params_.progress_checker_ids.size());
@@ -189,6 +195,7 @@ ParameterHandler::updateParametersCallback(
       continue;
     }
 
+    // computeControl() 在整个 Action 期间持有同一把锁，避免控制中途改变服务器级参数。
     if (!mutex_.try_lock()) {
       RCLCPP_WARN(
         logger_,

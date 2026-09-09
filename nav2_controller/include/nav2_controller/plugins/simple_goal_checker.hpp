@@ -35,6 +35,11 @@
 #ifndef NAV2_CONTROLLER__PLUGINS__SIMPLE_GOAL_CHECKER_HPP_
 #define NAV2_CONTROLLER__PLUGINS__SIMPLE_GOAL_CHECKER_HPP_
 
+/**
+ * @file simple_goal_checker.hpp
+ * @brief 使用位置、朝向和剩余路径长度判断机器人是否到达目标。
+ */
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -54,22 +59,29 @@ namespace nav2_controller
  *
  * This class can be stateful if the stateful parameter is set to true (which it is by default).
  * This means that the goal checker will not check if the xy position matches again once it is found to be true.
+ * 中文：支持有状态位置锁存、滞回缓冲以及前后方向对称的航向容差。
  */
 class SimpleGoalChecker : public nav2_core::GoalChecker
 {
 public:
   /**
    * @brief Construct a new Simple Goal Checker object
+    * 中文：构造简单目标检查器。
+  * 调用方：pluginlib 在 ControllerServer::on_configure() 创建该插件实例时调用。
    */
   SimpleGoalChecker();
 
   /**
    * @brief Destroy the Simple Goal Checker object
+    * 中文：注销动态参数回调。
+  * 调用方：ControllerServer 清空 goal_checkers_、销毁插件实例时调用。
    */
   ~SimpleGoalChecker();
 
   /**
    * @brief Initialize the goal checker
+    * 中文：读取位置、航向、路径长度、状态锁存和对称朝向等参数。
+  * 调用方：ControllerServer::on_activate() 通过 GoalChecker 基类接口调用。
    * @param parent Weak pointer to the lifecycle node
    * @param plugin_name Name of the plugin
    * @param costmap_ros Shared pointer to the costmap
@@ -81,11 +93,15 @@ public:
 
   /**
    * @brief Reset the goal checker state
+    * 中文：清除 XY 已到达的锁存状态，供新路径重新判断。
+  * 调用方：ControllerServer::setPlannerPath() 通过 GoalChecker 基类接口调用。
    */
   void reset() override;
 
   /**
    * @brief Check if the goal is reached
+    * 中文：先检查 XY 和剩余路径长度，再检查普通或对称航向误差。
+  * 调用方：ControllerServer::isGoalReached() 通过 GoalChecker 基类接口调用。
    * @param query_pose Current pose of the robot
    * @param goal_pose Target goal pose
    * @param velocity Current velocity of the robot
@@ -99,6 +115,8 @@ public:
 
   /**
    * @brief Get the position and velocity tolerances
+    * 中文：向控制器报告本检查器使用的位置、航向和路径长度容差。
+  * 调用方：当前 nav2_controller 生产代码没有直接调用；供外部通过 GoalChecker 接口查询。
    * @param pose_tolerance Output parameter for pose tolerance
    * @param vel_tolerance Output parameter for velocity tolerance
    * @param path_length_tolerance Output parameter for path length tolerance
@@ -111,6 +129,8 @@ public:
 
   /**
    * @brief Check if XY goal position has been reached (without considering yaw)
+    * 中文：检查剩余路径长度和 XY 距离，并处理 stateful 锁存及滞回复位。
+  * 调用方：SimpleGoalChecker::isGoalReached()；也可由派生类或外部接口调用。
    * @param query_pose The pose to check
    * @param goal_pose The pose to check against
    * @param velocity The robot's current velocity
@@ -141,6 +161,8 @@ protected:
    * This callback is triggered when one or more parameters are about to be updated.
    * It checks the validity of parameter values and rejects updates that would lead
    * to invalid or inconsistent configurations
+  * 中文：拒绝本插件命名空间内的负数参数。
+  * 调用方：initialize() 注册后，由 rclcpp 参数框架在设置参数前间接调用。
    * @param parameters List of parameters that are being updated.
    * @return rcl_interfaces::msg::SetParametersResult Result indicating whether the update is accepted.
    */
@@ -151,6 +173,8 @@ protected:
    * @brief Apply parameter updates after validation
    * This callback is executed when parameters have been successfully updated.
    * It updates the internal configuration of the node with the new parameter values.
+  * 中文：线程安全地更新各容差、状态锁存和对称朝向配置。
+  * 调用方：initialize() 注册后，由 rclcpp 参数框架在参数验证成功后间接调用。
    * @param parameters List of parameters that have been updated.
    */
   void updateParametersCallback(const std::vector<rclcpp::Parameter> & parameters);

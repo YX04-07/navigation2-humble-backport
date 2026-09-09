@@ -91,25 +91,25 @@ bt_navigator:
 
 controller_server:
   ros__parameters:
-    enable_stamped_cmd_vel: false
-    controller_frequency: 10.0
-    costmap_update_timeout: 0.30
-    min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.5
-    min_theta_velocity_threshold: 0.001
-    failure_tolerance: 0.3
-    progress_checker_plugins: ["progress_checker"]
-    goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
-    controller_plugins: ["FollowPath"]
-    path_handler_plugins: ["PathHandler"]
-    use_realtime_priority: false
-    speed_limit_topic: "speed_limit"
+    enable_stamped_cmd_vel: false  # false 发布 Twist；true 发布带时间戳的 TwistStamped
+    controller_frequency: 10.0  # 控制循环频率（Hz）；应与 model_dt 基本匹配（此处 1 / 0.1 = 10 Hz）
+    costmap_update_timeout: 0.30  # 等待代价地图更新的最长时间（秒）
+    min_x_velocity_threshold: 0.001  # 小于该值的里程计 x 速度视为 0（m/s）
+    min_y_velocity_threshold: 0.5  # 小于该值的里程计 y 速度视为 0；差速车不使用横向速度（m/s）
+    min_theta_velocity_threshold: 0.001  # 小于该值的里程计角速度视为 0（rad/s）
+    failure_tolerance: 0.3  # 控制器失败后允许继续尝试的时间（秒）；设为 -1 表示一直容忍
+    progress_checker_plugins: ["progress_checker"]  # 导航进度检查器实例列表
+    goal_checker_plugins: ["general_goal_checker"]  # 到达目标判定器实例列表
+    controller_plugins: ["FollowPath"]  # 局部路径跟踪控制器实例列表
+    path_handler_plugins: ["PathHandler"]  # 全局路径裁剪、变换和分段处理器实例列表
+    use_realtime_priority: false  # 是否尝试为控制线程设置实时调度优先级
+    speed_limit_topic: "speed_limit"  # 接收速度区域或外部限速消息的话题
 
     # Progress checker parameters
     progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      plugin: "nav2_controller::SimpleProgressChecker"  # 简单位移进度检查器
+      required_movement_radius: 0.5  # 在允许时间内至少需要移动的距离（m）
+      movement_time_allowance: 10.0  # 完成上述最小移动量的允许时间（秒）
     # Goal checker parameters
     #precise_goal_checker:
     #  plugin: "nav2_controller::SimpleGoalChecker"
@@ -117,58 +117,73 @@ controller_server:
     #  yaw_goal_tolerance: 0.25
     #  stateful: true
     general_goal_checker:
-      stateful: true
-      plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
-      path_length_tolerance: 1.0
+      stateful: true  # 进入 XY 容差后保持该状态，随后只检查目标朝向
+      plugin: "nav2_controller::SimpleGoalChecker"  # 基于位置和航向容差判断是否到达目标
+      xy_goal_tolerance: 0.25  # 目标位置容差（m）
+      yaw_goal_tolerance: 0.25  # 目标航向容差（rad）
+      path_length_tolerance: 1.0  # 允许的剩余路径长度上限（m），避免回环路径过早判定到达
     PathHandler:
-      plugin: "nav2_controller::FeasiblePathHandler"
-      prune_distance: 2.0
-      enforce_path_inversion: false
-      enforce_path_rotation: true
-      inversion_xy_tolerance: 0.2
-      inversion_yaw_tolerance: 0.4
-      minimum_rotation_angle: 0.785
-      reject_unit_path: false
+      plugin: "nav2_controller::FeasiblePathHandler"  # 支持方向反转点和原地旋转段的路径处理器
+      prune_distance: 2.0  # 从机器人当前位置向后裁剪已走路径的最大距离（m）
+      enforce_path_inversion: false  # 是否在路径前进/倒退方向切换点处分段并强制执行
+      enforce_path_rotation: true  # 是否识别并强制执行路径中的原地旋转段
+      inversion_xy_tolerance: 0.2  # 判定已到达方向切换点的位置容差（m）
+      inversion_yaw_tolerance: 0.4  # 判定已完成方向切换或旋转的航向容差（rad）
+      minimum_rotation_angle: 0.785  # 被识别为原地旋转段的最小角度（rad，约 45°）
+      reject_unit_path: false  # 是否拒绝仅含一个位姿点的路径
     FollowPath:
-      plugin: "nav2_mppi_controller::MPPIController"
-      time_steps: 28
-      model_dt: 0.1
-      model_delay_vx: 0.0
-      model_delay_vy: 0.0
-      model_delay_wz: 0.0
-      batch_size: 1000
-      open_loop: false
-      ax_max: 3.0
-      ax_min: -3.0
-      ay_max: 0.0
-      ay_min: 0.0
-      az_max: 1.5
-      vx_std: 0.2
-      vy_std: 0.2
-      wz_std: 0.4
-      vx_max: 0.5
-      vx_min: -0.0
-      vy_max: 0.0
-      wz_max: 1.9
-      iteration_count: 1
-      temperature: 0.3
-      gamma: 0.015
-      visualize: false
-      publish_optimal_trajectory: false
-      regenerate_noises: true
-      motion_model: "diff_drive"
+      plugin: "nav2_mppi_controller::MPPIController"  # MPPI（模型预测路径积分）局部控制器插件
+
+      # 采样与预测时域：总预测时间 = time_steps × model_dt = 2.8 秒
+      time_steps: 28  # 每条候选轨迹包含的离散时间步数
+      model_dt: 0.1  # 相邻轨迹点的时间间隔（秒）
+      model_delay_vx: 0.0  # x 方向速度指令到运动响应的模型延迟（秒）
+      model_delay_vy: 0.0  # y 方向速度指令到运动响应的模型延迟（秒）
+      model_delay_wz: 0.0  # 角速度指令到运动响应的模型延迟（秒）
+      batch_size: 1000  # 每次优化随机采样的候选轨迹数量；越大效果通常越稳但计算量越高
+      iteration_count: 1  # 每个控制周期执行的 MPPI 优化迭代次数；通常保持 1 并优先增加 batch_size
+      open_loop: false  # false 以最新里程计状态为起点；true 以上一控制预测状态开环推进
+
+      # 运动学与动力学约束
+      ax_max: 3.0  # 最大前向加速度（m/s²）
+      ax_min: -3.0  # 最大前向减速度，即最小 x 加速度（m/s²）
+      ay_max: 0.0  # 最大横向加速度（m/s²）；差速模型设为 0
+      ay_min: 0.0  # 最小横向加速度（m/s²）；差速模型设为 0
+      az_max: 1.5  # 最大角加速度（rad/s²）
+      vx_max: 0.5  # 最大前向线速度（m/s）
+      vx_min: -0.0  # 最小前向线速度（m/s）；-0.0 等效 0，禁止倒车
+      vy_max: 0.0  # 最大横向速度绝对值（m/s）；仅全向模型使用
+      wz_max: 1.9  # 最大角速度绝对值（rad/s）
+
+      # 控制噪声标准差：决定候选控制量在当前最优解附近的探索范围
+      vx_std: 0.2  # x 方向线速度采样噪声标准差（m/s）
+      vy_std: 0.2  # y 方向线速度采样噪声标准差（m/s）；差速模型基本不使用
+      wz_std: 0.4  # 角速度采样噪声标准差（rad/s）
+
+      # MPPI 优化权重与输出
+      temperature: 0.3  # 轨迹代价的选择温度；越小越偏向最低代价轨迹，越大越接近候选均值
+      gamma: 0.015  # 控制扰动代价系数，用于平衡控制平滑性与控制能量
+      visualize: false  # 是否发布候选轨迹可视化；开启会明显增加计算与通信开销
+      publish_optimal_trajectory: false  # 是否发布每周期计算出的完整最优预测轨迹
+      regenerate_noises: true  # 是否每次迭代重新生成采样噪声；开启可增强随机探索但增加运行抖动
+
+      # 运动模型
+      motion_model: "diff_drive"  # 使用的运动模型实例名：差速驱动
       diff_drive:
-        plugin: "mppi::DiffDriveMotionModel"
+        plugin: "mppi::DiffDriveMotionModel"  # 差速驱动运动模型插件类型
+
+      # 候选轨迹可视化降采样参数，仅 visualize=true 时生效
       TrajectoryVisualizer:
-        trajectory_step: 5
-        time_step: 3
+        trajectory_step: 5  # 每隔多少条候选轨迹发布一条
+        time_step: 3  # 每条轨迹每隔多少个时间点发布一个点
+
+      # 对优化后最优轨迹执行最终安全校验
       TrajectoryValidator:
-        # The validator can be configured with additional parameters if needed.
-        plugin: "mppi::DefaultOptimalTrajectoryValidator"
-        collision_lookahead_time: 2.0  # Time to look ahead to check for collisions
-        consider_footprint: false  # Whether to consider the full robot's footprint (or circle) in trajectory validation collision checks
+        plugin: "mppi::DefaultOptimalTrajectoryValidator"  # 默认最优轨迹碰撞验证器
+        collision_lookahead_time: 2.0  # 从最优轨迹起点向前检查碰撞的时长（秒）
+        consider_footprint: false  # false 按机器人中心点/半径检查；true 使用完整 SE2 足迹，精确但更耗时
+
+      # 参与候选轨迹打分的 critic 插件；总代价由各项加权组合得到
       critics:
         [
           "ConstraintCritic",
@@ -181,61 +196,62 @@ controller_server:
           "PreferForwardCritic",
         ]
       ConstraintCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 4.0
+        enabled: true  # 是否启用运动学约束 critic
+        cost_power: 1  # 代价幂次；1 为线性惩罚，增大后会强化高代价样本的惩罚
+        cost_weight: 4.0  # 运动学约束代价权重
       GoalCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 5.0
-        threshold_to_consider: 1.4
+        enabled: true  # 是否启用目标位置 critic
+        cost_power: 1  # 目标位置代价幂次
+        cost_weight: 5.0  # 目标位置代价权重
+        threshold_to_consider: 1.4  # 距目标小于该距离时才启用此项（m）
       GoalAngleCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 3.0
-        threshold_to_consider: 0.5
+        enabled: true  # 是否启用目标航向 critic
+        cost_power: 1  # 目标航向代价幂次
+        cost_weight: 3.0  # 目标航向代价权重
+        threshold_to_consider: 0.5  # 距目标小于该距离时才要求对准目标航向（m）
       PreferForwardCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 5.0
-        threshold_to_consider: 0.5
+        enabled: true  # 是否惩罚倒车，鼓励机器人向前运动
+        cost_power: 1  # 前进偏好代价幂次
+        cost_weight: 5.0  # 前进偏好代价权重
+        threshold_to_consider: 0.5  # 距目标大于该距离时才启用前进偏好（m）
       CostCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 3.81
-        near_collision_cost: 253
-        critical_cost: 300.0
-        consider_footprint: false
-        collision_cost: 1000000.0
-        near_goal_distance: 1.0
-        trajectory_point_step: 2
+        enabled: true  # 是否直接根据局部代价地图栅格值进行避障评分
+        cost_power: 1  # 障碍物代价幂次
+        #cost_weight: 3.81  # 普通代价地图避障权重，调大避障更积极，调小可能导致贴障绕行
+        cost_weight: 5.0  # 普通代价地图避障权重，调大避障更积极，调小可能导致贴障绕行
+        near_collision_cost: 253  # 判定接近碰撞的代价地图阈值（253 为内切膨胀障碍）调小避障更积极，调大可能导致贴障绕行
+        critical_cost: 300.0  # 轨迹点进入高代价膨胀区域时附加的严重惩罚
+        consider_footprint: false  # false 使用中心点/圆形半径；true 使用完整机器人足迹计算代价
+        collision_cost: 1000000.0  # 轨迹发生真实碰撞时施加的极大惩罚
+        near_goal_distance: 1.0  # 距目标小于该值时减弱普通避障偏好，便于贴近障碍物旁的目标（m）
+        trajectory_point_step: 2  # 每隔多少个预测点计算一次代价地图代价
       PathAlignCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 14.0
-        max_path_occupancy_ratio: 0.05
-        trajectory_point_step: 4
-        threshold_to_consider: 0.5
-        offset_from_furthest: 20
-        use_path_orientations: false
+        enabled: true  # 是否惩罚轨迹与全局路径横向不对齐
+        cost_power: 1  # 路径对齐代价幂次
+        cost_weight: 14.0  # 路径对齐代价权重；过大可能限制绕障空间
+        max_path_occupancy_ratio: 0.05  # 路径被障碍占据比例超过 5% 时停用对齐项，允许主动绕障
+        trajectory_point_step: 4  # 每隔多少个预测点计算一次路径对齐误差
+        threshold_to_consider: 0.5  # 距目标大于该距离时才启用路径对齐（m）
+        offset_from_furthest: 20  # 用最远已到达路径点之后第 20 个点衡量是否已充分沿路径前进
+        use_path_orientations: false  # 是否同时使用全局路径点朝向；Navfn 路径通常保持 false
       PathFollowCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 5.0
-        offset_from_furthest: 5
-        threshold_to_consider: 1.4
+        enabled: true  # 是否鼓励候选轨迹沿全局路径向前推进
+        cost_power: 1  # 路径跟随代价幂次
+        cost_weight: 5.0  # 路径跟随代价权重
+        offset_from_furthest: 5  # 以最远已到达路径点之后第 5 个点作为跟随参考点
+        threshold_to_consider: 1.4  # 距目标大于该距离时才启用路径推进项（m）
       PathAngleCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 2.0
-        offset_from_furthest: 4
-        threshold_to_consider: 0.5
-        max_angle_to_furthest: 1.0
-        mode: 0
+        enabled: true  # 是否惩罚机器人朝向与路径前进方向之间的夹角
+        cost_power: 1  # 路径角度代价幂次
+        cost_weight: 2.0  # 路径角度代价权重
+        offset_from_furthest: 4  # 使用最远已到达路径点之后第 4 个点计算目标路径方向
+        threshold_to_consider: 0.5  # 距目标大于该距离时才启用路径角度项（m）
+        max_angle_to_furthest: 1.0  # 朝向与参考路径方向夹角超过该值时才施加角度代价（rad）
+        mode: 0  # 0 偏好前进；1 前后均可；2 遵循可行路径中记录的行驶方向
       # TwirlingCritic:
-      #   enabled: true
-      #   twirling_cost_power: 1
-      #   twirling_cost_weight: 10.0
+      #   enabled: true  # 是否抑制不必要的自旋；默认未加载到 critics 列表中
+      #   twirling_cost_power: 1  # 自旋代价幂次
+      #   twirling_cost_weight: 5.0  # 自旋惩罚权重
 
 local_costmap:
   local_costmap:

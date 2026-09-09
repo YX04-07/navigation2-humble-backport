@@ -18,6 +18,11 @@
 #include "angles/angles.h"
 #include "pluginlib/class_list_macros.hpp"
 #include "nav2_controller/plugins/feasible_path_handler.hpp"
+
+/**
+ * @file feasible_path_handler.cpp
+ * @brief 实现全局路径分段、最近点搜索、局部裁剪、坐标变换和已通过路径剪枝。
+ */
 #include "nav2_util/path_utils.hpp"
 #include "nav2_util/geometry_utils.hpp"
 #include "nav2_core/controller_exceptions.hpp"
