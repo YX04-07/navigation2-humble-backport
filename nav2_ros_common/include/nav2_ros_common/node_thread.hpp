@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__NODE_THREAD_HPP_
 #define NAV2_ROS_COMMON__NODE_THREAD_HPP_
 
+// 本文件提供一个 RAII 后台执行线程，用于持续 spin 节点或执行器。
+// 析构时会取消执行器并等待线程退出，因此析构可能短暂阻塞。
+
 #include <memory>
 
 #include "rclcpp/rclcpp.hpp"
@@ -37,6 +40,7 @@ public:
   : node_(node_base)
   {
     executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+    // 线程捕获 this；NodeThread 对象必须在线程停止前保持有效。
     thread_ = std::make_unique<std::thread>(
       [&]()
       {
@@ -74,6 +78,7 @@ public:
    */
   ~NodeThread()
   {
+    // 先解除 spin() 的阻塞，再 join，确保成员销毁前后台线程已退出。
     executor_->cancel();
     thread_->join();
   }

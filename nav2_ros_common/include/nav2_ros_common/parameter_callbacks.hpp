@@ -1,6 +1,9 @@
 #ifndef NAV2_ROS_COMMON__PARAMETER_CALLBACKS_HPP_
 #define NAV2_ROS_COMMON__PARAMETER_CALLBACKS_HPP_
 
+// 本文件管理动态参数回调的注册句柄，将“参数合法性验证”和
+// “参数生效后的业务更新”封装为成对的 activate/deactivate 操作。
+
 #include <functional>
 #include <utility>
 #include <vector>
@@ -11,13 +14,23 @@
 namespace nav2
 {
 
+/**
+ * @class nav2::ParameterCallbacks
+ * @brief 管理节点参数验证回调与更新回调的生命周期
+ *
+ * 新版 rclcpp 在参数提交后执行更新回调；旧版没有 post-set 接口，
+ * 因而在验证成功后立即执行更新回调，两种版本的回调阶段略有差异。
+ */
 class ParameterCallbacks
 {
 public:
+  /// 返回 successful=false 可拒绝整批参数更新。
   using ValidationCallback = std::function<rcl_interfaces::msg::SetParametersResult(
         const std::vector<rclcpp::Parameter> &)>;
+  /// 在参数通过验证后同步业务状态，不负责决定参数是否可接受。
   using UpdateCallback = std::function<void(const std::vector<rclcpp::Parameter> &)>;
 
+  /** @brief 在给定节点上注册验证和更新回调，并持有其注册句柄。 */
   template<typename NodeT>
   void activate(
     NodeT node, ValidationCallback validation_callback, UpdateCallback update_callback)
@@ -42,6 +55,7 @@ public:
 #endif
   }
 
+  /** @brief 从注册时使用的节点移除回调并释放句柄。 */
   template<typename NodeT>
   void deactivate(NodeT node)
   {

@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__QOS_PROFILES_HPP_
 #define NAV2_ROS_COMMON__QOS_PROFILES_HPP_
 
+// 本文件集中定义 Nav2 常用 QoS 预设，避免各模块重复组合可靠性、
+// 持久性和历史深度策略。通信两端仍需使用相互兼容的 QoS。
+
 #include "rclcpp/rclcpp.hpp"
 
 namespace nav2
@@ -78,6 +81,7 @@ public:
   LatchedSubscriptionQoS(const int depth = 10)  // NOLINT
   : rclcpp::QoS(rclcpp::KeepLast(depth))
   {
+    // transient_local 使后加入的订阅者可以接收发布者保留的历史样本。
     this->reliable();
     this->transient_local();
   }
@@ -98,6 +102,7 @@ public:
   SensorDataQoS(const int depth = 10)  // NOLINT
   : rclcpp::QoS(rclcpp::KeepLast(depth))
   {
+    // 传感器流优先低延迟；网络拥塞时允许丢失个别样本。
     this->best_effort();
     this->durability_volatile();
   }

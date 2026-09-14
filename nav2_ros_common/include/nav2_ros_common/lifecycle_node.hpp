@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__LIFECYCLE_NODE_HPP_
 #define NAV2_ROS_COMMON__LIFECYCLE_NODE_HPP_
 
+// 本文件是 Nav2 生命周期节点的公共封装：在 ROS 2 LifecycleNode 之上统一提供
+// 参数读取、通信接口工厂、bond 心跳、自启动以及进程退出前的尽力清理。
+
 #include <memory>
 #include <string>
 #include <thread>
@@ -36,6 +39,7 @@
 namespace nav2
 {
 
+// 生命周期回调返回值的短别名：SUCCESS、FAILURE 或 ERROR。
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 using namespace std::chrono_literals;  // NOLINT
 
@@ -62,6 +66,7 @@ public:
     const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : rclcpp_lifecycle::LifecycleNode(node_name, ns, options, getEnableLifecycleServices(options))
   {
+    // Nav2 由 lifecycle manager 通过 bond 主动监控节点，不让服务端自行超时。
     // server side never times out from lifecycle manager
     this->declare_parameter(bond::msg::Constants::DISABLE_HEARTBEAT_TIMEOUT_PARAM, true);
     this->set_parameter(
@@ -71,6 +76,7 @@ public:
     bond_heartbeat_period = this->declare_or_get_parameter<double>("bond_heartbeat_period", 0.25);
     bool autostart_node = this->declare_or_get_parameter("autostart_node", false);
     if (autostart_node) {
+      // 使用零周期 timer 延迟状态转换，避免在对象尚未构造完成时执行回调。
       autostart();
     }
 
@@ -179,6 +185,7 @@ public:
   {
     auto pub = nav2::interfaces::create_publisher<MessageT>(
       shared_from_this(), topic_name, qos, callback_group);
+    // 纳入生命周期管理，节点 activate/deactivate 时发布者会同步切换状态。
     this->add_managed_entity(pub);
 
     // Automatically activate the publisher if the node is already active
@@ -352,6 +359,7 @@ public:
    */
   virtual void on_rcl_preshutdown()
   {
+    // 这是 rcl Context 关闭流程，不等同于生命周期状态机的 on_shutdown()。
     RCLCPP_INFO(
       get_logger(), "Running Nav2 LifecycleNode rcl preshutdown (%s)",
       this->get_name());
@@ -433,6 +441,7 @@ protected:
     * We will give the user some ability to clean up properly here, but it's
     * best effort; i.e. we aren't trying to account for all possible states.
     */
+    // 按当前状态执行，允许预关机和析构阶段重复调用而不重复转换已完成的状态。
     if (get_current_state().id() ==
       lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
     {

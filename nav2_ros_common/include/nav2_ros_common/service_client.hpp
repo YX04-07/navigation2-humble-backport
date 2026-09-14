@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__SERVICE_CLIENT_HPP_
 #define NAV2_ROS_COMMON__SERVICE_CLIENT_HPP_
 
+// 本文件封装 ROS 2 服务客户端，提供服务发现、同步等待和异步调用。
+// 可选内部执行器适合当前线程需要阻塞等待响应、且节点已由外部执行器管理的场景。
+
 #include <string>
 #include <memory>
 #include <chrono>
@@ -52,6 +55,7 @@ public:
     use_internal_executor_(use_internal_executor)
   {
     if (use_internal_executor) {
+      // 不自动加入节点的默认执行器，避免同一节点被重复添加到两个执行器。
       callback_group_ = provided_node->create_callback_group(
         rclcpp::CallbackGroupType::MutuallyExclusive,
         false);
@@ -229,6 +233,7 @@ public:
   */
   void stop()
   {
+    // 该操作仅对构造时启用了内部执行器的客户端有效。
     if (client_) {
       callback_group_executor_->cancel();
     }

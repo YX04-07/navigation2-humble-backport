@@ -16,6 +16,9 @@
 #ifndef  NAV2_ROS_COMMON__VALIDATE_MESSAGES_HPP_
 #define  NAV2_ROS_COMMON__VALIDATE_MESSAGES_HPP_
 
+// 本文件对 Nav2 常见消息执行防御性校验，阻止 NaN/Inf、非法坐标系、
+// 非单位四元数、尺寸不一致及可能导致下游整数溢出的地图进入系统。
+
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -46,7 +49,7 @@
 namespace nav2
 {
 
-
+/// 校验浮点数是否为有限值。
 bool validateMsg(const double & num)
 {
   /*  @brief double/float value check
@@ -71,6 +74,7 @@ bool validateMsg(const std::array<double, N> & msg)
    *     like the field `covariance` used in the msg-type:
    *       geometry_msgs::msg::PoseWithCovarianceStamped
    */
+  // 当前数组重载按协方差语义处理：元素必须有限、非负且不超过上限。
   for (const auto & element : msg) {
     if (!validateMsg(element)) {return false;}
 
@@ -115,6 +119,7 @@ bool validateMsg(const geometry_msgs::msg::Point & msg)
 }
 
 const double epsilon = 1e-4;
+/// 校验四元数各分量有限，且模长在 epsilon 容差内等于 1。
 bool validateMsg(const geometry_msgs::msg::Quaternion & msg)
 {
   //  check sub-type
@@ -180,6 +185,7 @@ bool validateMsg(const nav_msgs::msg::OccupancyGrid & msg)
   // msg.data :  @todo any check for it ?
   if (!validateMsg(msg.info)) {return false;}
 
+  // 尺寸上限和乘法溢出检查用于保护 AMCL 等下游整数表示。
   if (msg.info.width > INT16_MAX || msg.info.height > INT16_MAX) {
     // avoid overflow in nav2_amcl::convertMap()
     // because map_t size_x and size_y are int
@@ -232,6 +238,7 @@ bool validateMsg(const map_msgs::msg::OccupancyGridUpdate & msg)
 
 bool validateMsg(const sensor_msgs::msg::Range & msg)
 {
+  // 校验消息声明范围；当前不强制 range 必须位于 [min_range, max_range] 内。
   if (!validateMsg(msg.header)) {return false;}
   if (!validateMsg(static_cast<double>(msg.field_of_view))) {return false;}
   if (!validateMsg(static_cast<double>(msg.min_range))) {return false;}

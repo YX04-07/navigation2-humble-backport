@@ -15,6 +15,8 @@
 #ifndef NAV2_ROS_COMMON__SERVICE_SERVER_HPP_
 #define NAV2_ROS_COMMON__SERVICE_SERVER_HPP_
 
+// 本文件封装 ROS 2 服务端的创建过程，统一服务 QoS、回调签名和 introspection 配置。
+
 #include <string>
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
@@ -39,6 +41,13 @@ public:
   using SharedPtr = std::shared_ptr<ServiceServer<ServiceT>>;
   using UniquePtr = std::unique_ptr<ServiceServer<ServiceT>>;
 
+  /**
+   * @brief 创建服务并把底层请求转发给用户回调
+   * @param service_name 服务名称
+   * @param node 用于创建服务的节点
+   * @param callback 请求处理函数
+   * @param callback_group 回调所属分组；它决定与其他回调的并发关系
+   */
   template<typename NodeT>
   explicit ServiceServer(
     const std::string & service_name,
@@ -62,6 +71,7 @@ public:
     #endif
       callback_group);
 
+    // 根据节点的 introspection_mode 参数配置服务事件观测能力。
     nav2::setIntrospectionMode(
       this->server_,
       node->get_node_parameters_interface(), node->get_clock());

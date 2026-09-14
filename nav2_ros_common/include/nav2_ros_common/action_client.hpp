@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__ACTION_CLIENT_HPP_
 #define NAV2_ROS_COMMON__ACTION_CLIENT_HPP_
 
+// 本文件统一 Nav2 中 Action 客户端的类型名称。
+// 当前仅提供类型别名，不额外增加生命周期、线程或错误处理逻辑。
+
 #include <memory>
 #include "rclcpp_action/rclcpp_action.hpp"
 

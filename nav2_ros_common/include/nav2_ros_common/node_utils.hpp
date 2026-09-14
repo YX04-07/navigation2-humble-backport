@@ -16,6 +16,9 @@
 #ifndef NAV2_ROS_COMMON__NODE_UTILS_HPP_
 #define NAV2_ROS_COMMON__NODE_UTILS_HPP_
 
+// 本文件汇集 Nav2 节点级通用工具：名称生成、参数声明、插件类型读取、
+// 线程优先级、服务 introspection、ROS 参数改写以及包共享目录查询。
+
 #include <vector>
 #include <string>
 #include <chrono>
@@ -134,6 +137,7 @@ inline std::string time_to_string(size_t len)
  */
 inline std::string generate_internal_node_name(const std::string & prefix = "")
 {
+  // 时间后缀用于降低命名冲突概率，并非密码学随机数或严格全局唯一 ID。
   return sanitize_node_name(prefix) + "_" + time_to_string(8);
 }
 
@@ -305,6 +309,7 @@ inline ParamType declare_or_get_parameter(
   const ParamType & default_value,
   const ParameterDescriptor & parameter_descriptor = ParameterDescriptor())
 {
+  // 这两个公共开关控制所有经此入口读取的默认参数是否告警或严格报错。
   declare_parameter_if_not_declared(node, "warn_on_missing_params", rclcpp::ParameterValue(false));
   bool warn_if_no_override{false};
   node->get_parameter("warn_on_missing_params", warn_if_no_override);
@@ -353,6 +358,7 @@ inline std::string get_plugin_type_param(
  */
 inline void setSoftRealTimePriority()
 {
+  // 仅修改调用该函数的当前线程，不影响进程中的其他线程。
 #ifdef __APPLE__
   // macOS: Use Mach thread API to approximate real-time scheduling
   thread_port_t thread = pthread_mach_thread_np(pthread_self());
@@ -391,6 +397,12 @@ inline void setSoftRealTimePriority()
 #endif
 }
 
+/**
+ * @brief 按 introspection_mode 参数配置 service/action 通信观测
+ *
+ * metadata 仅发布元数据，contents 还会发布请求与响应内容并增加运行开销；
+ * 其他值按 disabled 处理。旧版 rclcpp 不支持时该函数为空操作。
+ */
 template<typename InterfaceT>
 inline void setIntrospectionMode(
   InterfaceT & ros_interface,
@@ -428,6 +440,7 @@ inline void replaceOrAddArgument(
   std::vector<std::string> & arguments, const std::string & option,
   const std::string & arg_name, const std::string & new_argument)
 {
+  // 使用子串匹配定位第一个同名参数；未找到时追加一组 ROS 参数标记。
   auto argument = std::find_if(
     arguments.begin(), arguments.end(),
     [arg_name](const std::string & value) {return value.find(arg_name) != std::string::npos;});
@@ -440,6 +453,7 @@ inline void replaceOrAddArgument(
   }
 }
 
+/** @brief 跨 ament_index_cpp 版本获取包的 share 目录字符串。 */
 inline std::string get_package_share_directory(const std::string & package_name)
 {
   #if RCLCPP_VERSION_GTE(30, 1, 4)

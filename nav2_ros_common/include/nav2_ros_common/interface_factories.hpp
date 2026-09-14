@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__INTERFACE_FACTORIES_HPP_
 #define NAV2_ROS_COMMON__INTERFACE_FACTORIES_HPP_
 
+// 本文件是 Nav2 ROS 通信接口的统一工厂：集中创建 topic、service、action 和 timer，
+// 同时应用 QoS 覆写、事件日志、introspection 及仿真时间等公共策略。
+
 #include <utility>
 #include <string>
 #include <memory>
@@ -64,7 +67,7 @@ inline rclcpp::SubscriptionOptions createSubscriptionOptions(
   rclcpp::QOSLivelinessChangedCallbackType qos_liveliness_changed_callback = nullptr)
 {
   rclcpp::SubscriptionOptions options;
-  // Allow for all topics to have QoS overrides
+  // 只允许通过参数覆写最常用的四项 QoS，不包括 deadline 和 liveliness。
   if (allow_parameter_qos_overrides) {
     options.qos_overriding_options = rclcpp::QosOverridingOptions(
       {rclcpp::QosPolicyKind::Depth, rclcpp::QosPolicyKind::Durability,
@@ -150,7 +153,7 @@ inline rclcpp::PublisherOptions createPublisherOptions(
   rclcpp::QOSLivelinessLostCallbackType qos_liveliness_lost_callback = nullptr)
 {
   rclcpp::PublisherOptions options;
-  // Allow for all topics to have QoS overrides
+  // 只允许通过参数覆写最常用的四项 QoS，不包括 deadline 和 liveliness。
   if (allow_parameter_qos_overrides) {
     options.qos_overriding_options = rclcpp::QosOverridingOptions(
       {rclcpp::QosPolicyKind::Depth, rclcpp::QosPolicyKind::Durability,
@@ -251,6 +254,7 @@ typename nav2::Publisher<MessageT>::SharedPtr create_publisher(
     topic_name,
     qos,
     createPublisherOptions(topic_name, allow_parameter_qos_overrides, callback_group));
+  // 此自由工厂只负责创建，不会自动把发布者加入 LifecycleNode 的 managed entities。
   return pub;
 }
 

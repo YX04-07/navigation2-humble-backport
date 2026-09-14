@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__RATE_HPP_
 #define NAV2_ROS_COMMON__RATE_HPP_
 
+// 本文件提供支持仿真时间的循环频率控制，并兼容不同 rclcpp 版本。
+// use_sim_time=true 时循环随 /clock 推进，否则使用不受系统校时影响的稳态时钟。
+
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -82,11 +85,16 @@ public:
   {}
 
 #if !RCLCPP_VERSION_GTE(30, 0, 0)
+  /**
+   * @brief 睡眠至下一个周期边界
+   * @return true 表示完成睡眠；false 表示当前周期已经超期
+   */
   bool sleep()
   {
     auto now = clock_->now();
     auto next_interval = last_interval_ + period_;
     if (now < last_interval_) {
+      // 时钟回退时从当前时刻重新建立周期基准。
       next_interval = now + period_;
     }
 
@@ -94,6 +102,7 @@ public:
     last_interval_ = last_interval_ + period_;
     if (time_to_sleep <= rclcpp::Duration(0, 0)) {
       if (now > next_interval + period_) {
+        // 严重超期时跳过已积压的周期，避免连续无休眠循环。
         last_interval_ = now + period_;
       }
       return false;
@@ -102,6 +111,7 @@ public:
     return clock_->sleep_for(time_to_sleep);
   }
 
+  /// 从当前时刻重新开始计算下一个周期。
   void reset()
   {
     last_interval_ = clock_->now();

@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__PUBLISHER_HPP_
 #define NAV2_ROS_COMMON__PUBLISHER_HPP_
 
+// 本文件统一 Nav2 中发布者的类型名称。
+// Publisher 是生命周期发布者，只有激活后才能正常发布消息。
+
 #include <memory>
 #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 

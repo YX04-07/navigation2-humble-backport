@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__TF2_FACTORIES_HPP_
 #define NAV2_ROS_COMMON__TF2_FACTORIES_HPP_
 
+// 本文件统一创建 TF buffer、listener、broadcaster 和 message filter，
+// 并在一处处理不同 ROS 2 / rclcpp 版本的构造接口差异。
+
 #include <memory>
 #include <string>
 
@@ -85,6 +88,7 @@ inline nav2::TransformBuffer::SharedPtr create_transform_buffer(
   rclcpp::CallbackGroup::SharedPtr callback_group = nullptr)
 {
   auto buffer = std::make_shared<nav2::TransformBuffer>(node->get_clock());
+  // timer interface 用于调度带超时的异步坐标变换请求。
 #if RCLCPP_VERSION_GTE(30, 0, 0)
   auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(*node, callback_group);
 #else
@@ -153,6 +157,7 @@ inline nav2::TransformListener::SharedPtr create_transform_listener(
 inline nav2::TransformListener::SharedPtr create_transform_listener(
   nav2::TransformBuffer & buffer)
 {
+  // 未提供节点时，tf2_ros 会在内部使用临时隐藏节点接收 /tf 与 /tf_static。
   return std::make_shared<nav2::TransformListener>(buffer);
 }
 

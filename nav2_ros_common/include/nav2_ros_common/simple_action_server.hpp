@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__SIMPLE_ACTION_SERVER_HPP_
 #define NAV2_ROS_COMMON__SIMPLE_ACTION_SERVER_HPP_
 
+// 本文件封装 ROS 2 Action 服务端，提供生命周期启停、后台执行、取消和抢占。
+// 服务端只维护一个当前目标与一个待处理目标，不提供无界目标队列。
+
 #include <memory>
 #include <mutex>
 #include <string>
@@ -126,6 +129,7 @@ public:
     using namespace std::placeholders;  // NOLINT
     use_realtime_prioritization_ = realtime;
     if (spin_thread_) {
+      // 独立且互斥的 callback group 不自动加入节点外部执行器。
       callback_group_ = node_base_interface->create_callback_group(
         rclcpp::CallbackGroupType::MutuallyExclusive, false);
     }
@@ -224,6 +228,7 @@ public:
     debug_msg("Receiving a new goal");
 
     if (is_active(current_handle_) || is_running()) {
+      // 只有一个 pending 槽位；更新的目标会终止并替换原 pending 目标。
       debug_msg("An older goal is active, moving the new goal to a pending slot.");
 
       if (is_active(pending_handle_)) {
@@ -245,6 +250,7 @@ public:
       current_handle_ = handle;
 
       // Return quickly to avoid blocking the executor, so spin up a new thread
+      // execute_callback_ 在工作线程执行，避免长任务阻塞 ROS executor。
       debug_msg("Executing goal asynchronously.");
       execution_future_ = std::async(
         std::launch::async, [this]() {
@@ -259,6 +265,7 @@ public:
    */
   void work()
   {
+    // 用户回调应主动检查取消/抢占，并调用 succeeded_current() 或 terminate_*() 收尾。
     while (rclcpp::ok() && !stop_execution_ && is_active(current_handle_)) {
       debug_msg("Executing the goal...");
       try {
@@ -283,6 +290,7 @@ public:
       }
 
       if (is_active(current_handle_)) {
+        // 回调返回后目标仍为 active，说明用户未显式结束目标，统一按失败终止。
         warn_msg("Current goal was not completed successfully.");
         terminate(current_handle_);
         if (completion_callback_) {completion_callback_();}
@@ -334,6 +342,7 @@ public:
 
     using namespace std::chrono;  //NOLINT
     auto start_time = steady_clock::now();
+    // 停止是协作式的：无法强制杀死 execute_callback_，这里只能等待工作线程返回。
     while (execution_future_.wait_for(milliseconds(100)) != std::future_status::ready) {
       info_msg("Waiting for async process to finish.");
       if (steady_clock::now() - start_time >= server_timeout_) {
@@ -537,6 +546,7 @@ public:
    */
   void publish_feedback(typename std::shared_ptr<typename ActionT::Feedback> feedback)
   {
+    // 本函数不加 update_mutex_，应在目标句柄稳定的执行线程中调用。
     if (!is_active(current_handle_)) {
       error_msg("Trying to publish feedback when the current goal handle is not active");
       return;
@@ -561,6 +571,7 @@ protected:
   bool stop_execution_{false};
   bool use_realtime_prioritization_{false};
 
+  // 递归锁允许持锁流程继续调用同样加锁的 terminate()、accept_pending_goal() 等辅助方法。
   mutable std::recursive_mutex update_mutex_;
   bool server_active_{false};
   bool preempt_requested_{false};

@@ -15,6 +15,9 @@
 #ifndef NAV2_ROS_COMMON__SUBSCRIPTION_HPP_
 #define NAV2_ROS_COMMON__SUBSCRIPTION_HPP_
 
+// 本文件统一 Nav2 中订阅者的类型名称。
+// 与 LifecyclePublisher 不同，普通 Subscription 没有 activate/deactivate 状态。
+
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
 
